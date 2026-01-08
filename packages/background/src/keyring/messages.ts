@@ -12,6 +12,7 @@ import {
 import { PlainObject } from "../vault";
 import * as Legacy from "./legacy";
 import { MultiAccounts } from "../keyring-keystone";
+import { Lattice1Accounts } from "../keyring-lattice1";
 
 export class GetIsLockedMsg extends Message<boolean> {
   public static type() {
@@ -280,6 +281,49 @@ export class NewKeystoneKeyMsg extends Message<{
 
   type(): string {
     return NewKeystoneKeyMsg.type();
+  }
+}
+
+export class NewLattice1KeyMsg extends Message<{
+  vaultId: string;
+  status: KeyRingStatus;
+  keyInfos: KeyInfo[];
+}> {
+  public static type() {
+    return "new-lattice1-key";
+  }
+
+  constructor(
+    public readonly lattice1Accounts: Lattice1Accounts,
+    public readonly name: string,
+    public readonly password?: string
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.lattice1Accounts || this.lattice1Accounts.keys.length === 0) {
+      throw new Error("pub key not set");
+    }
+
+    if (
+      !this.lattice1Accounts.creds?.deviceId ||
+      !this.lattice1Accounts.creds?.password
+    ) {
+      throw new Error("device credentials not set");
+    }
+
+    if (!this.name) {
+      throw new Error("name not set");
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return NewLattice1KeyMsg.type();
   }
 }
 

@@ -26,6 +26,7 @@ import {
   KeyRingStatus,
   LockKeyRingMsg,
   NewKeystoneKeyMsg,
+  NewLattice1KeyMsg,
   NewLedgerKeyMsg,
   NewMnemonicKeyMsg,
   NewPrivateKeyKeyMsg,
@@ -35,7 +36,7 @@ import {
   ShowSensitiveKeyRingDataMsg,
   UnlockKeyRingMsg,
 } from "@keplr-wallet/background";
-import type { MultiAccounts } from "@keplr-wallet/background";
+import type { Lattice1Accounts, MultiAccounts } from "@keplr-wallet/background";
 import { ChainInfo } from "@keplr-wallet/types";
 import { ChainIdHelper } from "@keplr-wallet/cosmos";
 
@@ -277,6 +278,24 @@ export class KeyRingStore {
     password: string | undefined
   ) {
     const msg = new NewKeystoneKeyMsg(multiAccounts, name, password);
+    const result = yield* toGenerator(
+      this.requester.sendMessage(BACKGROUND_PORT, msg)
+    );
+    this._status = result.status;
+    this._keyInfos = result.keyInfos;
+
+    this.eventDispatcher.dispatchEvent("keplr_keystorechange");
+
+    return result.vaultId;
+  }
+
+  @flow
+  *newLattice1Key(
+    lattice1Accounts: Lattice1Accounts,
+    name: string,
+    password: string | undefined
+  ) {
+    const msg = new NewLattice1KeyMsg(lattice1Accounts, name, password);
     const result = yield* toGenerator(
       this.requester.sendMessage(BACKGROUND_PORT, msg)
     );

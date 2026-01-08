@@ -20,6 +20,7 @@ import {
   ExportKeyRingDataMsg,
   CheckLegacyKeyRingPasswordMsg,
   NewKeystoneKeyMsg,
+  NewLattice1KeyMsg,
   CheckPasswordMsg,
   GetLegacyKeyRingInfosMsg,
   ShowSensitiveLegacyKeyRingDataMsg,
@@ -39,6 +40,7 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(NewMnemonicKeyMsg);
   router.registerMessage(NewLedgerKeyMsg);
   router.registerMessage(NewKeystoneKeyMsg);
+  router.registerMessage(NewLattice1KeyMsg);
   router.registerMessage(NewPrivateKeyKeyMsg);
   router.registerMessage(AppendLedgerKeyAppMsg);
   router.registerMessage(AppendLedgerExtendedKeysMsg);

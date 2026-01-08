@@ -27,6 +27,7 @@ import { Buffer } from "buffer/";
 import * as Legacy from "./legacy";
 import { ChainsUIForegroundService, ChainsUIService } from "../chains-ui";
 import { MultiAccounts } from "../keyring-keystone";
+import { Lattice1Accounts } from "../keyring-lattice1";
 import { AnalyticsService } from "../analytics";
 import { Primitive } from "utility-types";
 import { runIfOnlyAppStart } from "../utils";
@@ -821,6 +822,62 @@ export class KeyRingService {
 
     const keyRing = this.getKeyRing("keystone");
     const vaultData = await keyRing.createKeyRingVault(multiAccounts);
+
+    // Finalize coin type if only one coin type exists.
+    const coinTypes: Record<string, number | undefined> = {};
+    const chainInfos = this.chainsService.getChainInfos();
+    for (const chainInfo of chainInfos) {
+      if (
+        !chainInfo.alternativeBIP44s ||
+        chainInfo.alternativeBIP44s.length === 0
+      ) {
+        const coinTypeTag = `keyRing-${
+          ChainIdHelper.parse(chainInfo.chainId).identifier
+        }-coinType`;
+        coinTypes[coinTypeTag] = chainInfo.bip44.coinType;
+      }
+    }
+
+    const id = this.vaultService.addVault(
+      "keyRing",
+      {
+        ...vaultData.insensitive,
+        ...coinTypes,
+        keyRingName: name,
+        keyRingType: keyRing.supportedKeyRingType(),
+      },
+      vaultData.sensitive
+    );
+
+    runInAction(() => {
+      this._selectedVaultId = id;
+    });
+
+    this.interactionService.dispatchEvent(WEBPAGE_PORT, "keystore-changed", {});
+
+    return id;
+  }
+
+  async createLattice1KeyRing(
+    lattice1Accounts: Lattice1Accounts,
+    name: string,
+    password?: string
+  ): Promise<string> {
+    if (!this.vaultService.isSignedUp) {
+      if (!password) {
+        throw new Error("Must provide password to sign in to vault");
+      }
+
+      await this.vaultService.signUp(password);
+    }
+
+    lattice1Accounts.keys.forEach((key) => {
+      const result = KeyRingService.parseBIP44Path(key.path);
+      KeyRingService.validateBIP44Path(result.path);
+    });
+
+    const keyRing = this.getKeyRing("lattice1");
+    const vaultData = await keyRing.createKeyRingVault(lattice1Accounts);
 
     // Finalize coin type if only one coin type exists.
     const coinTypes: Record<string, number | undefined> = {};

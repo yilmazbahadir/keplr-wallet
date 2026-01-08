@@ -26,6 +26,7 @@ import {
   ExportKeyRingDataMsg,
   CheckLegacyKeyRingPasswordMsg,
   NewKeystoneKeyMsg,
+  NewLattice1KeyMsg,
   CheckPasswordMsg,
   GetLegacyKeyRingInfosMsg,
   ShowSensitiveLegacyKeyRingDataMsg,
@@ -68,6 +69,11 @@ export const getHandler: (service: KeyRingService) => Handler = (
         return handleNewLedgerKeyMsg(service)(env, msg as NewLedgerKeyMsg);
       case NewKeystoneKeyMsg:
         return handleNewKeystoneKeyMsg(service)(env, msg as NewKeystoneKeyMsg);
+      case NewLattice1KeyMsg:
+        return handleNewLattice1KeyMsg(service)(
+          env,
+          msg as NewLattice1KeyMsg
+        );
       case NewPrivateKeyKeyMsg:
         return handleNewPrivateKeyKeyMsg(service)(
           env,
@@ -262,6 +268,23 @@ const handleNewKeystoneKeyMsg: (
   return async (_, msg) => {
     const vaultId = await service.createKeystoneKeyRing(
       msg.multiAccounts,
+      msg.name,
+      msg.password
+    );
+    return {
+      vaultId,
+      status: service.keyRingStatus,
+      keyInfos: service.getKeyInfos(),
+    };
+  };
+};
+
+const handleNewLattice1KeyMsg: (
+  service: KeyRingService
+) => InternalHandler<NewLattice1KeyMsg> = (service) => {
+  return async (_, msg) => {
+    const vaultId = await service.createLattice1KeyRing(
+      msg.lattice1Accounts,
       msg.name,
       msg.password
     );

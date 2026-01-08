@@ -148,7 +148,11 @@ export class KeyRingEthereumService {
       },
       async (res: { signingData: Uint8Array; signature?: Uint8Array }) => {
         const { signature, signingData } = await (async () => {
-          if (keyInfo.type === "ledger" || keyInfo.type === "keystone") {
+          if (
+            keyInfo.type === "ledger" ||
+            keyInfo.type === "keystone" ||
+            keyInfo.type === "lattice1"
+          ) {
             if (!res.signature || res.signature.length === 0) {
               throw new Error("Frontend should provide signature");
             }
