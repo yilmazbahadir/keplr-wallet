@@ -677,6 +677,15 @@ export const EnableChainsScene: FunctionComponent<{
         });
       }
 
+      if (keyType === "lattice1") {
+        modularChainInfos = modularChainInfos.filter((modularChainInfo) => {
+          if ("starknet" in modularChainInfo || "bitcoin" in modularChainInfo) {
+            return false;
+          }
+          return true;
+        });
+      }
+
       return modularChainInfos;
     }, [
       chainStore,

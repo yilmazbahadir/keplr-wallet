@@ -56,6 +56,29 @@ export type RequiredCurrencyTokenScan = Omit<
   })[];
 };
 
+const normalizeEndpointUrl = (value?: string): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) {
+    const lower = trimmed.toLowerCase();
+    const isLocalhost =
+      lower === "localhost" || lower.startsWith("localhost:");
+    const isIp =
+      /^[0-9.]+(?::\d+)?$/.test(lower) || /^\[.*\](?::\d+)?$/.test(lower);
+    const scheme = isLocalhost || isIp ? "http://" : "https://";
+    return `${scheme}${trimmed}`;
+  }
+
+  return trimmed;
+};
+
 export class ChainStore extends BaseChainStore<ChainInfoWithCoreTypes> {
   @observable
   protected _isInitializing: boolean = false;
@@ -761,7 +784,15 @@ export class ChainStore extends BaseChainStore<ChainInfoWithCoreTypes> {
     rest: string | undefined,
     evmRpc: string | undefined
   ) {
-    const msg = new SetChainEndpointsMsg(chainId, rpc, rest, evmRpc);
+    const normalizedRpc = normalizeEndpointUrl(rpc);
+    const normalizedRest = normalizeEndpointUrl(rest);
+    const normalizedEvmRpc = normalizeEndpointUrl(evmRpc);
+    const msg = new SetChainEndpointsMsg(
+      chainId,
+      normalizedRpc,
+      normalizedRest,
+      normalizedEvmRpc
+    );
     const res = yield* toGenerator(
       this.requester.sendMessage(BACKGROUND_PORT, msg)
     );

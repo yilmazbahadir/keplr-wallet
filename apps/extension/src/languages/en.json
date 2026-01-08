@@ -83,6 +83,7 @@
   "pages.register.connect-hardware.content.title": "Select a hardware wallet that you would like to use with Keplr",
   "pages.register.connect-hardware.connect-ledger-button": "Connect Ledger",
   "pages.register.connect-hardware.connect-keystone-button": "Connect Keystone",
+  "pages.register.connect-hardware.connect-lattice1-button": "Connect Lattice1",
 
   "pages.register.new-mnemonic.title": "New Recovery Phrase",
   "pages.register.new-mnemonic.12-words-tab": "12 words",
@@ -138,6 +139,13 @@
   "pages.register.connect-ledger.use-hid-text": "Use alternative USB connection method(HID)",
   "pages.register.connect-ledger.use-hid-confirm-title": "Unable to use Web HID",
   "pages.register.connect-ledger.use-hid-confirm-paragraph": "Please enable ‘experimental web platform features’ to use Web HID",
+
+  "pages.register.connect-lattice1.title": "Connect your Lattice1",
+  "pages.register.connect-lattice1.paragraph": "Pair your Lattice1 over Wi-Fi and approve public key export.",
+  "pages.register.connect-lattice1.step-1": "Open Lattice Connect to pair your device.",
+  "pages.register.connect-lattice1.step-2": "Unlock your Lattice1 and confirm the connection.",
+  "pages.register.connect-lattice1.step-3": "Approve public key export on your Lattice1.",
+  "pages.register.connect-lattice1.error-title": "Unable to connect to Lattice1",
 
   "pages.register.connect-keystone.paragraph": "Please unlock your Keystone device and connect it to your computer via USB.",
   "pages.register.connect-keystone.step-text": "Step {num}",
@@ -587,6 +595,11 @@
   "page.sign.components.ledger-guide.box.unknown-error-title": "Unknown error",
   "page.sign.components.ledger-guide.box.sign-on-ledger-title": "Sign on Ledger",
   "page.sign.components.ledger-guide.box.sign-on-ledger-paragraph": "To proceed, please review and approve the transaction on your Ledger device.",
+
+  "page.sign.components.lattice1-guide.box.error-title": "Error",
+  "page.sign.components.lattice1-guide.box.sign-on-lattice1-title": "Sign on Lattice1",
+  "page.sign.components.lattice1-guide.box.sign-on-lattice1-paragraph": "Review and approve the request on your Lattice1.",
+  "page.sign.components.lattice1-guide.box.connect-lattice1-paragraph": "Make sure your Lattice1 is unlocked and on the same Wi-Fi network.",
 
   "page.sign.keystone.title": "Scan the QR Code",
   "page.sign.keystone.scan-qrcode": "Scan the QR code via your Keystone device",

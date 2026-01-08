@@ -6,6 +6,7 @@ export const KEY_INFO_SORT_KEY = {
   MNEMONIC: "sort-mnemonic",
   PRIVATE_KEY: "sort-private-key",
   LEDGER: "sort-ledger",
+  LATTICE1: "sort-lattice1",
   KEYSTONE: "sort-keystone",
   UNKNOWN: "sort-unknown",
 };
@@ -85,6 +86,12 @@ export const useGetKeyInfosSeparatedByType = (keyInfos: KeyInfo[]) => {
     });
   }, [keyInfos]);
 
+  const lattice1Keys = useMemo(() => {
+    return keyInfos.filter((keyInfo) => {
+      return keyInfo.type === "lattice1";
+    });
+  }, [keyInfos]);
+
   const keystoneKeys = useMemo(() => {
     return keyInfos.filter((keyInfo) => {
       return keyInfo.type === "keystone";
@@ -94,6 +101,7 @@ export const useGetKeyInfosSeparatedByType = (keyInfos: KeyInfo[]) => {
   const unknownKeys = useMemo(() => {
     const knownKeys = mnemonicKeys
       .concat(ledgerKeys)
+      .concat(lattice1Keys)
       .concat(privateKeyInfos)
       .concat(socialPrivateKeyInfos)
       .concat(keystoneKeys);
@@ -103,6 +111,7 @@ export const useGetKeyInfosSeparatedByType = (keyInfos: KeyInfo[]) => {
   }, [
     keyInfos,
     ledgerKeys,
+    lattice1Keys,
     mnemonicKeys,
     privateKeyInfos,
     socialPrivateKeyInfos,
@@ -161,6 +170,7 @@ export const useGetKeyInfosSeparatedByType = (keyInfos: KeyInfo[]) => {
     socialPrivateKeyInfoByType,
     privateKeyInfos,
     ledgerKeys,
+    lattice1Keys,
     keystoneKeys,
     unknownKeys,
   };
@@ -173,6 +183,7 @@ export const useGetAllSortedKeyInfos = (keyInfos: KeyInfo[]) => {
     socialPrivateKeyInfoByType,
     privateKeyInfos,
     ledgerKeys,
+    lattice1Keys,
     keystoneKeys,
     unknownKeys,
   } = useGetKeyInfosSeparatedByType(keyInfos);
@@ -222,6 +233,14 @@ export const useGetAllSortedKeyInfos = (keyInfos: KeyInfo[]) => {
       res.push(...sortKeyInfos(ledgerKeys, indexMap));
     }
 
+    if (lattice1Keys.length > 0) {
+      const indexMap =
+        uiConfigStore.selectWalletConfig.getKeyToSortVaultIdsMapIndex(
+          KEY_INFO_SORT_KEY.LATTICE1
+        );
+      res.push(...sortKeyInfos(lattice1Keys, indexMap));
+    }
+
     if (keystoneKeys.length > 0) {
       const indexMap =
         uiConfigStore.selectWalletConfig.getKeyToSortVaultIdsMapIndex(
@@ -243,6 +262,7 @@ export const useGetAllSortedKeyInfos = (keyInfos: KeyInfo[]) => {
     socialPrivateKeyInfoByType,
     privateKeyInfos,
     ledgerKeys,
+    lattice1Keys,
     keystoneKeys,
     unknownKeys,
     uiConfigStore.selectWalletConfig,

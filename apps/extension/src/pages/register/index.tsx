@@ -40,6 +40,7 @@ import {
   ConnectKeystoneUSBScene,
 } from "./connect-keystone";
 import { ScanKeystoneScene } from "./connect-keystone/scan";
+import { ConnectLattice1Scene } from "./connect-lattice1";
 
 const Container = styled.div`
   min-width: 100vw;
@@ -298,6 +299,11 @@ const RegisterPageImpl: FunctionComponent = observer(() => {
             {
               name: "connect-ledger",
               element: ConnectLedgerScene,
+              width: "40rem",
+            },
+            {
+              name: "connect-lattice1",
+              element: ConnectLattice1Scene,
               width: "40rem",
             },
             {

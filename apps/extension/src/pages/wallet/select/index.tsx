@@ -65,6 +65,7 @@ export const WalletSelectPage: FunctionComponent = observer(() => {
     socialPrivateKeyInfoByType,
     privateKeyInfos,
     ledgerKeys,
+    lattice1Keys,
     keystoneKeys,
     unknownKeys,
   } = useGetKeyInfosSeparatedByType(keyInfos);
@@ -160,6 +161,14 @@ export const WalletSelectPage: FunctionComponent = observer(() => {
                 sortKey={KEY_INFO_SORT_KEY.LEDGER}
                 title={intl.formatMessage({ id: "page.wallet.ledger-title" })}
                 keyInfos={ledgerKeys}
+              />
+            ) : null}
+
+            {lattice1Keys.length > 0 ? (
+              <KeyInfoList
+                sortKey={KEY_INFO_SORT_KEY.LATTICE1}
+                title="Lattice1"
+                keyInfos={lattice1Keys}
               />
             ) : null}
 

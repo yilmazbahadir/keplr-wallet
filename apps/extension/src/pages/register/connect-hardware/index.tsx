@@ -13,6 +13,7 @@ import { Box } from "../../../components/box";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useTheme } from "styled-components";
 import { KeystoneIcon } from "../../../components/icon/keystone";
+import { Lattice1Icon } from "../../../components/icon/lattice1";
 
 export const ConnectHardwareWalletScene: FunctionComponent = () => {
   const sceneTransition = useSceneTransition();
@@ -82,6 +83,19 @@ export const ConnectHardwareWalletScene: FunctionComponent = () => {
           onClick={() => {
             sceneTransition.push("name-password-hardware", {
               type: "keystone",
+            });
+          }}
+        />
+        <Button
+          text={intl.formatMessage({
+            id: "pages.register.connect-hardware.connect-lattice1-button",
+          })}
+          size="large"
+          color="secondary"
+          left={<Lattice1Icon color={theme.mode} />}
+          onClick={() => {
+            sceneTransition.push("name-password-hardware", {
+              type: "lattice1",
             });
           }}
         />

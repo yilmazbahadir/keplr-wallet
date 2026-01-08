@@ -17,7 +17,7 @@ import { WalletStatus } from "@keplr-wallet/stores";
 import AnimCreating from "../../../public/assets/lottie/register/creating.json";
 import AnimCreatingLight from "../../../public/assets/lottie/register/creating-light.json";
 import lottie from "lottie-web";
-import { PlainObject } from "@keplr-wallet/background";
+import { Lattice1Accounts, PlainObject } from "@keplr-wallet/background";
 import { MultiAccounts } from "@keystonehq/keystone-sdk";
 import { useTheme } from "styled-components";
 import { dispatchGlobalEventExceptSelf } from "../../../utils/global-events";
@@ -63,6 +63,7 @@ export const FinalizeKeyScene: FunctionComponent<{
     };
     connectionType?: "USB" | "QR";
   };
+  lattice1?: Lattice1Accounts;
   stepPrevious: number;
   stepTotal: number;
 }> = observer(
@@ -73,6 +74,7 @@ export const FinalizeKeyScene: FunctionComponent<{
     privateKey,
     ledger,
     keystone,
+    lattice1,
     stepPrevious,
     stepTotal,
   }) => {
@@ -165,6 +167,13 @@ export const FinalizeKeyScene: FunctionComponent<{
         } else if (keystone) {
           type = "keystone";
           vaultId = await keyRingStore.newKeystoneKey(keystone, name, password);
+        } else if (lattice1) {
+          type = "lattice1";
+          vaultId = await keyRingStore.newLattice1Key(
+            lattice1,
+            name,
+            password
+          );
         } else {
           throw new Error("Invalid props");
         }

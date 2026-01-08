@@ -26,6 +26,11 @@ export const RegisterNamePasswordHardwareScene: FunctionComponent<{
   const header = useRegisterHeader();
   useSceneEvents({
     onWillVisible: () => {
+      const stepTotal = type === "ledger" ? 6 : 4;
+      const paragraphId =
+        type === "lattice1"
+          ? "pages.register.connect-lattice1.paragraph"
+          : "pages.register.connect-ledger.paragraph";
       header.setHeader({
         mode: "step",
         title: intl.formatMessage({
@@ -33,11 +38,11 @@ export const RegisterNamePasswordHardwareScene: FunctionComponent<{
         }),
         paragraphs: [
           intl.formatMessage({
-            id: "pages.register.connect-ledger.paragraph",
+            id: paragraphId,
           }),
         ],
         stepCurrent: 1,
-        stepTotal: type === "keystone" ? 4 : 6,
+        stepTotal,
       });
       setHeaderHasSet(true);
     },
@@ -91,6 +96,14 @@ export const RegisterNamePasswordHardwareScene: FunctionComponent<{
             return sceneTransition.push("connect-keystone-qr", {
               name: data.name,
               password: data.password,
+              stepPrevious: 1,
+              stepTotal: 4,
+            });
+          } else if (type === "lattice1") {
+            return sceneTransition.push("connect-lattice1", {
+              name: data.name,
+              password: data.password,
+              bip44Path: bip44PathState.getPath(),
               stepPrevious: 1,
               stepTotal: 4,
             });
@@ -233,6 +246,37 @@ export const RegisterNamePasswordHardwareScene: FunctionComponent<{
                   </VerticalCollapseTransition>
                 </React.Fragment>
               )}
+              <Gutter size="1.25rem" />
+            </React.Fragment>
+          ) : undefined}
+          {type === "lattice1" ? (
+            <React.Fragment>
+              <Gutter size="1rem" />
+              <VerticalCollapseTransition
+                width="100%"
+                collapsed={isBIP44CardOpen}
+              >
+                <Box alignX="center">
+                  <Button
+                    size="small"
+                    color="secondary"
+                    text={intl.formatMessage({
+                      id: "button.advanced",
+                    })}
+                    onClick={() => {
+                      setIsBIP44CardOpen(true);
+                    }}
+                  />
+                </Box>
+              </VerticalCollapseTransition>
+              <VerticalCollapseTransition collapsed={!isBIP44CardOpen}>
+                <SetBip44PathCard
+                  state={bip44PathState}
+                  onClose={() => {
+                    setIsBIP44CardOpen(false);
+                  }}
+                />
+              </VerticalCollapseTransition>
               <Gutter size="1.25rem" />
             </React.Fragment>
           ) : undefined}

@@ -82,6 +82,7 @@
   "pages.register.connect-hardware.content.title": "选择你想要与Keplr一起使用的硬件钱包",
   "pages.register.connect-hardware.connect-ledger-button": "连接Ledger",
   "pages.register.connect-hardware.connect-keystone-button": "连接Keystone",
+  "pages.register.connect-hardware.connect-lattice1-button": "连接Lattice1",
 
   "pages.register.new-mnemonic.title": "新助记词",
   "pages.register.new-mnemonic.12-words-tab": "12个词",
@@ -136,6 +137,13 @@
   "pages.register.connect-ledger.use-hid-text": "使用替代的USB连接方法（HID）",
   "pages.register.connect-ledger.use-hid-confirm-title": "无法使用Web HID",
   "pages.register.connect-ledger.use-hid-confirm-paragraph": "请启用“实验性Web平台功能”以使用Web HID",
+
+  "pages.register.connect-lattice1.title": "连接你的Lattice1",
+  "pages.register.connect-lattice1.paragraph": "通过 Wi-Fi 配对 Lattice1 并批准导出公钥。",
+  "pages.register.connect-lattice1.step-1": "打开 Lattice Connect 以配对设备。",
+  "pages.register.connect-lattice1.step-2": "解锁你的 Lattice1 并确认连接。",
+  "pages.register.connect-lattice1.step-3": "在 Lattice1 上批准导出公钥。",
+  "pages.register.connect-lattice1.error-title": "无法连接到 Lattice1",
 
   "pages.register.connect-keystone.title": "请连接你的硬件钱包",
   "pages.register.connect-keystone.step-text": "步骤 {num}",
@@ -536,6 +544,11 @@
   "page.sign.components.ledger-guide.box.unknown-error-title": "未知错误",
   "page.sign.components.ledger-guide.box.sign-on-ledger-title": "Ledger签名",
   "page.sign.components.ledger-guide.box.sign-on-ledger-paragraph": "要继续，请在你的Ledger设备上查看并确认交易。",
+
+  "page.sign.components.lattice1-guide.box.error-title": "错误",
+  "page.sign.components.lattice1-guide.box.sign-on-lattice1-title": "在 Lattice1 上签名",
+  "page.sign.components.lattice1-guide.box.sign-on-lattice1-paragraph": "请在你的 Lattice1 上查看并批准请求。",
+  "page.sign.components.lattice1-guide.box.connect-lattice1-paragraph": "请确保你的 Lattice1 已解锁并连接到同一 Wi-Fi 网络。",
 
   "page.sign.keystone.title": "扫描二维码",
   "page.sign.keystone.scan-qrcode": "通过你的Keystone设备扫描二维码",

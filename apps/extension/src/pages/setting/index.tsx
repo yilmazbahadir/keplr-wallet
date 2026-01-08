@@ -32,7 +32,7 @@ import { ChainIdHelper } from "@keplr-wallet/cosmos";
 import { Image } from "../../components/image";
 import { Tooltip } from "../../components/tooltip";
 import { useTheme } from "styled-components";
-import { version } from "../../../package.json";
+import packageJson from "../../../package.json";
 import { useIntl } from "react-intl";
 import { HeaderLayout } from "../../layouts/header";
 import { BackButton } from "../../layouts/header/components";
@@ -419,7 +419,7 @@ export const SettingPage: FunctionComponent = observer(() => {
                     : ColorPalette["gray-100"]
                 }
               >
-                {version}
+                {packageJson.version}
               </Body3>
             </XAxis>
           </Box>

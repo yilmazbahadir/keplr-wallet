@@ -27,6 +27,12 @@ export const AccountNameIcon = ({
     switch (keyInfoType) {
       case "ledger":
         return theme.mode === "light" ? <_LedgerIconLM /> : <_LedgerIconDM />;
+      case "lattice1":
+        return theme.mode === "light" ? (
+          <_Lattice1IconLM />
+        ) : (
+          <_Lattice1IconDM />
+        );
       case "keystone":
         return theme.mode === "light" ? (
           <_KeystoneIconLM />
@@ -158,6 +164,38 @@ const _KeystoneIconDM = () => {
       <rect width="24" height="24" rx="12" fill="#242428" />
       <path d="M7 6.5H13L9 15H6L7 6.5Z" fill="#F5F8FF" />
       <path d="M17 17.5H11L15 9H18L17 17.5Z" fill="#3D71FF" />
+    </svg>
+  );
+};
+
+const _Lattice1IconLM = () => {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="24" height="24" rx="12" fill="#DCDCE3" />
+      <rect x="6" y="6" width="4" height="12" rx="1" fill="black" />
+      <rect x="6" y="14" width="12" height="4" rx="1" fill="#1F5AFF" />
+    </svg>
+  );
+};
+
+const _Lattice1IconDM = () => {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="24" height="24" rx="12" fill="#242428" />
+      <rect x="6" y="6" width="4" height="12" rx="1" fill="#F5F8FF" />
+      <rect x="6" y="14" width="12" height="4" rx="1" fill="#3D71FF" />
     </svg>
   );
 };
