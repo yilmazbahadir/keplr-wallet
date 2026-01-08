@@ -22,11 +22,14 @@ import { LedgerGuideBox } from "../../components/ledger-guide-box";
 import { KeystoneUSBBox } from "../../components/keystone-usb-box";
 import {
   handleEthereumPreSignByKeystone,
+  handleEthereumPreSignByLattice1,
   handleEthereumPreSignByLedger,
 } from "../../utils/handle-eth-sign";
 import { FormattedMessage, useIntl } from "react-intl";
 import { ErrModuleKeystoneSign, KeystoneUR } from "../../utils/keystone";
+import { ErrModuleLattice1Sign } from "../../utils/lattice1";
 import { KeystoneSign } from "../../components/keystone";
+import { Lattice1GuideBox } from "../../components/lattice1-guide-box";
 import { useTheme } from "styled-components";
 import SimpleBar from "simplebar-react";
 import { ViewDataButton } from "../../components/view-data-button";
@@ -361,6 +364,11 @@ export const EthereumSignTxView: FunctionComponent<{
     Error | undefined
   >(undefined);
 
+  const [isLattice1Interacting, setIsLattice1Interacting] = useState(false);
+  const [lattice1InteractingError, setLattice1InteractingError] = useState<
+    Error | undefined
+  >(undefined);
+
   const [unmountPromise] = useState(() => {
     let resolver: () => void;
     const promise = new Promise<void>((resolve) => {
@@ -391,7 +399,8 @@ export const EthereumSignTxView: FunctionComponent<{
       interactionData.id
     ) ||
     isLedgerInteracting ||
-    isKeystoneInteracting;
+    isKeystoneInteracting ||
+    isLattice1Interacting;
 
   const buttonDisabled = txConfigsValidate.interactionBlocked;
 
@@ -470,6 +479,13 @@ export const EthereumSignTxView: FunctionComponent<{
                   }),
               }
             );
+          } else if (interactionData.data.keyType === "lattice1") {
+            setIsLattice1Interacting(true);
+            setLattice1InteractingError(undefined);
+            signature = await handleEthereumPreSignByLattice1(
+              interactionData,
+              signingDataBuff
+            );
           }
 
           await signEthereumInteractionStore.approveWithProceedNext(
@@ -510,17 +526,22 @@ export const EthereumSignTxView: FunctionComponent<{
               setLedgerInteractingError(e);
             } else if (e.module === ErrModuleKeystoneSign) {
               setKeystoneInteractingError(e);
+            } else if (e.module === ErrModuleLattice1Sign) {
+              setLattice1InteractingError(e);
             } else {
               setLedgerInteractingError(undefined);
               setKeystoneInteractingError(undefined);
+              setLattice1InteractingError(undefined);
             }
           } else {
             setLedgerInteractingError(undefined);
             setKeystoneInteractingError(undefined);
+            setLattice1InteractingError(undefined);
           }
         } finally {
           setIsLedgerInteracting(false);
           setIsKeystoneInteracting(false);
+          setIsLattice1Interacting(false);
         }
       },
     },
@@ -551,6 +572,13 @@ export const EthereumSignTxView: FunctionComponent<{
       isLedgerInteracting,
       ledgerInteractingError,
     ]
+  );
+
+  const lattice1GuideBox = (
+    <Lattice1GuideBox
+      isLattice1Interacting={isLattice1Interacting}
+      lattice1InteractingError={lattice1InteractingError}
+    />
   );
 
   const keystoneUSBBox = isKeystonUSB && (
@@ -784,6 +812,7 @@ export const EthereumSignTxView: FunctionComponent<{
         })()}
 
         {ledgerGuideBox}
+        {lattice1GuideBox}
         {keystoneUSBBox}
       </Box>
       {keystoneSign}

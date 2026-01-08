@@ -34,12 +34,23 @@ import {
   ErrModuleKeystoneSign,
   ErrKeystoneUSBCommunication,
 } from "./keystone";
+import {
+  ErrLattice1SignerNotFound,
+  ErrModuleLattice1Sign,
+  Lattice1Keys,
+  getLattice1Credentials,
+  getLattice1PathFromPubKey,
+  type LatticeEthMessagePayload,
+  signLattice1EthMessage,
+  signLattice1EthTx,
+} from "./lattice1";
 import KeystoneSDK, { UR, utils } from "@keystonehq/keystone-sdk";
 import { EthermintChainIdHelper } from "@keplr-wallet/cosmos";
 import {
   createKeystoneTransport,
   handleKeystoneUSBError,
 } from "../../../utils/keystone";
+import { PlainObject } from "@keplr-wallet/background";
 export interface KeystoneOptions {
   displayQRCode: (ur: { type: string; cbor: string }) => Promise<void>;
   scanQRCode: () => Promise<KeystoneUR>;
@@ -170,6 +181,69 @@ export const handleEthereumPreSignByKeystone = async (
     throw new Error("Invalid request id");
   }
   return Buffer.from(signResult.signature, "hex");
+};
+
+export const handleEthereumPreSignByLattice1 = async (
+  interactionData: NonNullable<SignEthereumInteractionStore["waitingData"]>,
+  signingMessage: Uint8Array
+): Promise<Uint8Array | undefined> => {
+  const keys = interactionData.data.keyInsensitive["keys"] as Lattice1Keys;
+  const path = getLattice1PathFromPubKey(
+    keys,
+    Buffer.from(interactionData.data.pubKey).toString("hex")
+  );
+  if (path === null) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignerNotFound,
+      "Invalid signer"
+    );
+  }
+
+  const creds = getLattice1Credentials(
+    interactionData.data.keyInsensitive as PlainObject
+  );
+
+  switch (interactionData.data.signType) {
+    case EthSignType.MESSAGE: {
+      const sig = await signLattice1EthMessage(
+        creds,
+        path,
+        signingMessage,
+        "signPersonal"
+      );
+      return ethSignatureToBytes({
+        r: sig.r.replace(/^0x/, ""),
+        s: sig.s.replace(/^0x/, ""),
+        v: typeof sig.v === "bigint" ? Number(sig.v) : sig.v ?? 0,
+      });
+    }
+    case EthSignType.EIP712: {
+      const data = await EIP712MessageValidator.validateAsync(
+        JSON.parse(Buffer.from(signingMessage).toString())
+      );
+      const sig = await signLattice1EthMessage(
+        creds,
+        path,
+        data as LatticeEthMessagePayload,
+        "eip712"
+      );
+      return ethSignatureToBytes({
+        r: sig.r.replace(/^0x/, ""),
+        s: sig.s.replace(/^0x/, ""),
+        v: typeof sig.v === "bigint" ? Number(sig.v) : sig.v ?? 0,
+      });
+    }
+    case EthSignType.TRANSACTION: {
+      const payload = encodeEthMessage(signingMessage, EthSignType.TRANSACTION);
+      const sig = await signLattice1EthTx(creds, path, payload);
+      return ethSignatureToBytes({
+        r: sig.r.replace(/^0x/, ""),
+        s: sig.s.replace(/^0x/, ""),
+        v: typeof sig.v === "bigint" ? Number(sig.v) : sig.v ?? 0,
+      });
+    }
+  }
 };
 
 export const connectAndSignEthWithLedger = async (

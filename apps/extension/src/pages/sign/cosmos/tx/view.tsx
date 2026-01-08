@@ -37,6 +37,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import SimpleBar from "simplebar-react";
 import { KeystoneSign } from "../../components/keystone";
 import { ErrModuleKeystoneSign, KeystoneUR } from "../../utils/keystone";
+import { ErrModuleLattice1Sign } from "../../utils/lattice1";
 import { KeyRingService } from "@keplr-wallet/background";
 import { useTheme } from "styled-components";
 import { defaultProtoCodec } from "@keplr-wallet/cosmos";
@@ -56,6 +57,7 @@ import {
   FeeCoverageBackground,
 } from "../../../../components/top-up";
 import { useTopUp } from "../../../../hooks/use-topup";
+import { Lattice1GuideBox } from "../../components/lattice1-guide-box";
 
 /**
  * 서명을 처리할때 웹페이지에서 연속적으로 서명을 요청했을 수 있고
@@ -375,6 +377,11 @@ export const CosmosTxView: FunctionComponent<{
     Error | undefined
   >(undefined);
 
+  const [isLattice1Interacting, setIsLattice1Interacting] = useState(false);
+  const [lattice1InteractingError, setLattice1InteractingError] = useState<
+    Error | undefined
+  >(undefined);
+
   const isHighFee = (() => {
     if (feeConfig.fees) {
       let sumPrice = new Dec(0);
@@ -456,6 +463,9 @@ export const CosmosTxView: FunctionComponent<{
                 keystoneScanResolve.current = resolve;
               }),
           };
+        } else if (interactionData.data.keyType === "lattice1") {
+          setIsLattice1Interacting(true);
+          setLattice1InteractingError(undefined);
         }
 
         const signDocWrapper = feeConfig.topUpStatus.topUpOverrideStdFee
@@ -512,17 +522,22 @@ export const CosmosTxView: FunctionComponent<{
             setLedgerInteractingError(e);
           } else if (e.module === ErrModuleKeystoneSign) {
             setKeystoneInteractingError(e);
+          } else if (e.module === ErrModuleLattice1Sign) {
+            setLattice1InteractingError(e);
           } else {
             setLedgerInteractingError(undefined);
             setKeystoneInteractingError(undefined);
+            setLattice1InteractingError(undefined);
           }
         } else {
           setLedgerInteractingError(undefined);
           setKeystoneInteractingError(undefined);
+          setLattice1InteractingError(undefined);
         }
       } finally {
         setIsLedgerInteracting(false);
         setIsKeystoneInteracting(false);
+        setIsLattice1Interacting(false);
       }
     }
   };
@@ -547,6 +562,7 @@ export const CosmosTxView: FunctionComponent<{
     signInteractionStore.isObsoleteInteractionApproved(interactionData.id) ||
     isLedgerInteracting ||
     isKeystoneInteracting ||
+    isLattice1Interacting ||
     isTopUpInProgress;
 
   return (
@@ -878,6 +894,10 @@ export const CosmosTxView: FunctionComponent<{
           isLedgerInteracting={isLedgerInteracting}
           ledgerInteractingError={ledgerInteractingError}
           isInternal={interactionData.isInternal}
+        />
+        <Lattice1GuideBox
+          isLattice1Interacting={isLattice1Interacting}
+          lattice1InteractingError={lattice1InteractingError}
         />
         {isKeystonUSB && (
           <KeystoneUSBBox

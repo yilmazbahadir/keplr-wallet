@@ -28,6 +28,14 @@ import {
   getPathFromPubKey,
 } from "./keystone";
 import {
+  ErrLattice1SignerNotFound,
+  ErrModuleLattice1Sign,
+  Lattice1Keys,
+  getLattice1Credentials,
+  getLattice1PathFromPubKey,
+  signLattice1Cosmos,
+} from "./lattice1";
+import {
   createKeystoneTransport,
   handleKeystoneUSBError,
 } from "../../../utils/keystone";
@@ -256,6 +264,36 @@ export const handleCosmosPreSign = async (
         );
       }
       return Buffer.from(signResult.signature, "hex");
+    }
+    case "lattice1": {
+      const keys = interactionData.data.keyInsensitive[
+        "keys"
+      ] as Lattice1Keys;
+      const path = getLattice1PathFromPubKey(
+        keys,
+        Buffer.from(interactionData.data.pubKey).toString("hex")
+      );
+      if (path === null) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignerNotFound,
+          "Invalid signer"
+        );
+      }
+
+      const signBytes = Buffer.from(
+        signDocWrapper.mode === "direct"
+          ? signDocWrapper.protoSignDoc.toBytes()
+          : serializeSignDoc(signDocWrapper.aminoSignDoc)
+      );
+      const creds = getLattice1Credentials(
+        interactionData.data.keyInsensitive as PlainObject
+      );
+      const sig = await signLattice1Cosmos(creds, path, signBytes);
+
+      const r = Buffer.from(sig.r.replace(/^0x/, ""), "hex");
+      const s = Buffer.from(sig.s.replace(/^0x/, ""), "hex");
+      return Buffer.concat([r, s]);
     }
     default:
       return;

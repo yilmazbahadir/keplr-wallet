@@ -15,6 +15,7 @@ import { LedgerGuideBox } from "../components/ledger-guide-box";
 import { GuideBox } from "../../../components/guide-box";
 import { useIntl } from "react-intl";
 import { ErrModuleKeystoneSign, KeystoneUR } from "../utils/keystone";
+import { ErrModuleLattice1Sign } from "../utils/lattice1";
 import { KeystoneSign } from "../components/keystone";
 import { useTheme } from "styled-components";
 import { KeyRingService } from "@keplr-wallet/background";
@@ -26,6 +27,7 @@ import { ArbitraryMsgRequestOrigin } from "../components/arbitrary-message/arbit
 import { ArbitraryMsgSignHeader } from "../components/arbitrary-message/arbitrary-message-header";
 import { ArbitraryMsgWalletDetails } from "../components/arbitrary-message/arbitrary-message-wallet-details";
 import { ArbitraryMsgDataView } from "../components/arbitrary-message/arbitrary-message-data-view";
+import { Lattice1GuideBox } from "../components/lattice1-guide-box";
 
 export const SignCosmosADR36Page: FunctionComponent = observer(() => {
   const { chainStore, signInteractionStore, uiConfigStore } = useStore();
@@ -147,12 +149,18 @@ export const SignCosmosADR36Page: FunctionComponent = observer(() => {
     Error | undefined
   >(undefined);
 
+  const [isLattice1Interacting, setIsLattice1Interacting] = useState(false);
+  const [lattice1InteractingError, setLattice1InteractingError] = useState<
+    Error | undefined
+  >(undefined);
+
   const isLoading =
     signInteractionStore.isObsoleteInteractionApproved(
       signInteractionStore.waitingData?.id
     ) ||
     isLedgerInteracting ||
-    isKeystoneInteracting;
+    isKeystoneInteracting ||
+    isLattice1Interacting;
   const chainId: string = signInteractionStore.waitingData?.data.chainId || "";
   const signerInfo = {
     name:
@@ -276,6 +284,11 @@ export const SignCosmosADR36Page: FunctionComponent = observer(() => {
                       keystoneScanResolve.current = resolve;
                     }),
                 };
+              } else if (
+                signInteractionStore.waitingData.data.keyType === "lattice1"
+              ) {
+                setIsLattice1Interacting(true);
+                setLattice1InteractingError(undefined);
               }
 
               try {
@@ -308,17 +321,22 @@ export const SignCosmosADR36Page: FunctionComponent = observer(() => {
                     setLedgerInteractingError(e);
                   } else if (e.module === ErrModuleKeystoneSign) {
                     setKeystoneInteractingError(e);
+                  } else if (e.module === ErrModuleLattice1Sign) {
+                    setLattice1InteractingError(e);
                   } else {
                     setLedgerInteractingError(undefined);
                     setKeystoneInteractingError(undefined);
+                    setLattice1InteractingError(undefined);
                   }
                 } else {
                   setLedgerInteractingError(undefined);
                   setKeystoneInteractingError(undefined);
+                  setLattice1InteractingError(undefined);
                 }
               } finally {
                 setIsLedgerInteracting(false);
                 setIsKeystoneInteracting(false);
+                setIsLattice1Interacting(false);
               }
             }
           },
@@ -389,6 +407,10 @@ export const SignCosmosADR36Page: FunctionComponent = observer(() => {
             isInternal={signInteractionStore.waitingData.isInternal}
           />
         ) : null}
+        <Lattice1GuideBox
+          isLattice1Interacting={isLattice1Interacting}
+          lattice1InteractingError={lattice1InteractingError}
+        />
         {isKeystoneUSB && (
           <KeystoneUSBBox
             isKeystoneInteracting={isKeystoneInteracting}
