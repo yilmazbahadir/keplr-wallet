@@ -142,12 +142,12 @@ export const TokenFoundModal: FunctionComponent<{
 
           if (
             tokenScan.infos.length === 1 &&
-            tokenScan.infos[0].coinType != null
+            tokenScan.infos[0]["coinType"] != null
           ) {
             await keyRingStore.finalizeKeyCoinType(
               keyRingStore.selectedKeyInfo.id,
               enable,
-              tokenScan.infos[0].coinType
+              tokenScan.infos[0]["coinType"]
             );
           }
         }
@@ -421,7 +421,7 @@ const FoundChainView: FunctionComponent<{
         ...acc,
         ...cur.assets.map((asset) => ({
           ...asset,
-          paymentType: cur.bitcoinAddress?.paymentType,
+          paymentType: cur["bitcoinAddress"]?.paymentType,
         })),
       ];
     }, [] as (RequiredCurrencyTokenScan["infos"][number]["assets"][number] & { paymentType?: SupportedPaymentType })[]);
