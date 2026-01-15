@@ -32,13 +32,14 @@ const DEFAULT_LATTICE1_PATHS = [
   "m/44'/60'/0'/0/0",
   "m/44'/529'/0'/0/0",
   "m/44'/394'/0'/0/0",
-  "m/44'/234'/0'/0/0",
   "m/44'/564'/0'/0/0",
   "m/44'/459'/0'/0/0",
   "m/44'/330'/0'/0/0",
+  "m/44'/505'/0'/0/0",
+  "m/44'/931'/0'/0/0",
 ];
 
-const DEFAULT_COIN_TYPES = [118, 60, 529, 394, 234, 564, 459, 330];
+const DEFAULT_COIN_TYPES = [118, 60, 529, 394, 564, 459, 330, 505, 931];
 const DEFAULT_BITCOIN_COIN_TYPES = [0, 1];
 const DEFAULT_BITCOIN_PURPOSE = 84;
 const DEFAULT_LATTICE1_BITCOIN_PATHS = [
