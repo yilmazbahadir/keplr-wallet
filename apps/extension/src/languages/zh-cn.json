@@ -139,10 +139,9 @@
   "pages.register.connect-ledger.use-hid-confirm-paragraph": "请启用“实验性Web平台功能”以使用Web HID",
 
   "pages.register.connect-lattice1.title": "连接你的Lattice1",
-  "pages.register.connect-lattice1.paragraph": "通过 Wi-Fi 配对 Lattice1 并批准导出公钥。",
+  "pages.register.connect-lattice1.paragraph": "通过 Wi-Fi 配对 Lattice1 并确认连接。",
   "pages.register.connect-lattice1.step-1": "打开 Lattice Connect 以配对设备。",
   "pages.register.connect-lattice1.step-2": "解锁你的 Lattice1 并确认连接。",
-  "pages.register.connect-lattice1.step-3": "在 Lattice1 上批准导出公钥。",
   "pages.register.connect-lattice1.error-title": "无法连接到 Lattice1",
 
   "pages.register.connect-keystone.title": "请连接你的硬件钱包",

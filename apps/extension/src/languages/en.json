@@ -141,10 +141,9 @@
   "pages.register.connect-ledger.use-hid-confirm-paragraph": "Please enable ‘experimental web platform features’ to use Web HID",
 
   "pages.register.connect-lattice1.title": "Connect your Lattice1",
-  "pages.register.connect-lattice1.paragraph": "Pair your Lattice1 over Wi-Fi and approve public key export.",
+  "pages.register.connect-lattice1.paragraph": "Pair your Lattice1 over Wi-Fi and confirm the connection.",
   "pages.register.connect-lattice1.step-1": "Open Lattice Connect to pair your device.",
   "pages.register.connect-lattice1.step-2": "Unlock your Lattice1 and confirm the connection.",
-  "pages.register.connect-lattice1.step-3": "Approve public key export on your Lattice1.",
   "pages.register.connect-lattice1.error-title": "Unable to connect to Lattice1",
 
   "pages.register.connect-keystone.paragraph": "Please unlock your Keystone device and connect it to your computer via USB.",

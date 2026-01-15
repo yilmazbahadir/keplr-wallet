@@ -142,10 +142,9 @@
   "pages.register.connect-ledger.use-hid-confirm-paragraph": "웹 HID를 사용하시려면, ‘실험적 웹 플랫폼 기능’을 활성화해야 합니다.",
 
   "pages.register.connect-lattice1.title": "Lattice1을 연결하세요",
-  "pages.register.connect-lattice1.paragraph": "Wi-Fi로 Lattice1을 페어링하고 공개키 내보내기를 승인하세요.",
+  "pages.register.connect-lattice1.paragraph": "Wi-Fi로 Lattice1을 페어링하고 연결을 승인하세요.",
   "pages.register.connect-lattice1.step-1": "Lattice Connect를 열어 기기를 페어링하세요.",
   "pages.register.connect-lattice1.step-2": "Lattice1을 잠금 해제하고 연결을 승인하세요.",
-  "pages.register.connect-lattice1.step-3": "Lattice1에서 공개키 내보내기를 승인하세요.",
   "pages.register.connect-lattice1.error-title": "Lattice1에 연결할 수 없습니다",
 
   "pages.register.connect-keystone.title": "하드웨어 지갑을 연결해주세요.",

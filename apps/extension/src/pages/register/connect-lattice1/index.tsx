@@ -23,7 +23,6 @@ import {
 } from "../../../utils/lattice1";
 import { Lattice1Accounts } from "@keplr-wallet/background";
 import { Lattice1Icon } from "../../../components/icon/lattice1";
-import { KeyIcon } from "../../../components/icon";
 import { GuideBox } from "../../../components/guide-box";
 
 type Step = "unknown" | "paired" | "connected" | "app";
@@ -40,6 +39,12 @@ const DEFAULT_LATTICE1_PATHS = [
 ];
 
 const DEFAULT_COIN_TYPES = [118, 60, 529, 394, 234, 564, 459, 330];
+const DEFAULT_BITCOIN_COIN_TYPES = [0, 1];
+const DEFAULT_BITCOIN_PURPOSE = 84;
+const DEFAULT_LATTICE1_BITCOIN_PATHS = [
+  "m/84'/0'/0'/0/0",
+  "m/84'/1'/0'/0/0",
+];
 
 const isDefaultPath = (bip44Path: {
   account: number;
@@ -58,7 +63,11 @@ const getChainTypeFromPath = (path: string) => {
   if (!match) {
     return "cosmos";
   }
-  return Number(match[1]) === 60 ? "evm" : "cosmos";
+  const coinType = Number(match[1]);
+  if (coinType === 0 || coinType === 1) {
+    return "bitcoin";
+  }
+  return coinType === 60 ? "evm" : "cosmos";
 };
 
 export const ConnectLattice1Scene: FunctionComponent<{
@@ -101,13 +110,19 @@ export const ConnectLattice1Scene: FunctionComponent<{
   const [error, setError] = useState<string | undefined>();
 
   const paths = useMemo(() => {
-    if (!isDefaultPath(bip44Path)) {
-      return DEFAULT_COIN_TYPES.map(
-        (each) =>
-          `m/44'/${each}'/${bip44Path.account}'/${bip44Path.change}/${bip44Path.addressIndex}`
-      );
-    }
-    return DEFAULT_LATTICE1_PATHS;
+    const basePaths = isDefaultPath(bip44Path)
+      ? DEFAULT_LATTICE1_PATHS
+      : DEFAULT_COIN_TYPES.map(
+          (each) =>
+            `m/44'/${each}'/${bip44Path.account}'/${bip44Path.change}/${bip44Path.addressIndex}`
+        );
+    const bitcoinPaths = isDefaultPath(bip44Path)
+      ? DEFAULT_LATTICE1_BITCOIN_PATHS
+      : DEFAULT_BITCOIN_COIN_TYPES.map(
+          (coinType) =>
+            `m/${DEFAULT_BITCOIN_PURPOSE}'/${coinType}'/${bip44Path.account}'/${bip44Path.change}/${bip44Path.addressIndex}`
+        );
+    return [...basePaths, ...bitcoinPaths];
   }, [bip44Path]);
 
   const connectLattice1 = async () => {
@@ -194,19 +209,6 @@ export const ConnectLattice1Scene: FunctionComponent<{
           }
           focused={step === "paired"}
           completed={step === "connected" || step === "app"}
-        />
-        <StepView
-          step={3}
-          paragraph={intl.formatMessage({
-            id: "pages.register.connect-lattice1.step-3",
-          })}
-          icon={
-            <Box style={{ opacity: step !== "connected" ? 0.5 : 1 }}>
-              <KeyIcon />
-            </Box>
-          }
-          focused={step === "connected"}
-          completed={step === "app"}
         />
       </Stack>
       {error ? (
