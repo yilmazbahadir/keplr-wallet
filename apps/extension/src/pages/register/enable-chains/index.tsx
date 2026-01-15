@@ -678,11 +678,50 @@ export const EnableChainsScene: FunctionComponent<{
       }
 
       if (keyType === "lattice1") {
-        modularChainInfos = modularChainInfos.filter((modularChainInfo) => {
-          if ("starknet" in modularChainInfo || "bitcoin" in modularChainInfo) {
-            return false;
+        const supportedBitcoinPurposes = new Set([44, 49, 84]);
+        const preferredBitcoinPurposeOrder = [84, 49, 44];
+
+        modularChainInfos = modularChainInfos.flatMap((modularChainInfo) => {
+          if ("starknet" in modularChainInfo) {
+            return [];
           }
-          return true;
+
+          if (!("bitcoin" in modularChainInfo)) {
+            return [modularChainInfo];
+          }
+
+          const linkedChainInfos = modularChainInfo.linkedModularChainInfos ?? [];
+          const bitcoinInfos = [modularChainInfo, ...linkedChainInfos].filter(
+            (chainInfo) =>
+              "bitcoin" in chainInfo &&
+              supportedBitcoinPurposes.has(chainInfo.bitcoin.bip44.purpose)
+          );
+
+          if (bitcoinInfos.length === 0) {
+            return [];
+          }
+
+          const preferredBitcoinInfo =
+            bitcoinInfos.find(
+              (chainInfo) =>
+                "bitcoin" in chainInfo &&
+                preferredBitcoinPurposeOrder.includes(
+                  chainInfo.bitcoin.bip44.purpose
+                )
+            ) ?? bitcoinInfos[0];
+
+          const supportedLinkedChainInfos = bitcoinInfos.filter(
+            (chainInfo) => chainInfo !== preferredBitcoinInfo
+          );
+
+          return [
+            supportedLinkedChainInfos.length > 0
+              ? {
+                  ...preferredBitcoinInfo,
+                  linkedModularChainInfos: supportedLinkedChainInfos,
+                }
+              : preferredBitcoinInfo,
+          ];
         });
       }
 

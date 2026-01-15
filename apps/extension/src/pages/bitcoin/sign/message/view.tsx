@@ -10,6 +10,7 @@ import { useUnmount } from "../../../../hooks/use-unmount";
 import { handleExternalInteractionWithNoProceedNext } from "../../../../utils";
 import { KeplrError } from "@keplr-wallet/router";
 import { ErrModuleLedgerSign } from "../../../sign/utils/ledger-types";
+import { ErrModuleLattice1Sign } from "../../../sign/utils/lattice1";
 import { CancelIcon } from "../../../../components/button/cancel-icon";
 import { BackButton } from "../../../../layouts/header/components";
 import { HeaderLayout } from "../../../../layouts/header";
@@ -17,12 +18,16 @@ import { ColorPalette } from "../../../../styles";
 import { ApproveIcon } from "../../../../components/button";
 import { Gutter } from "../../../../components/gutter";
 import { LedgerGuideBox } from "../../../sign/components/ledger-guide-box";
+import { Lattice1GuideBox } from "../../../sign/components/lattice1-guide-box";
 import { ArbitraryMsgDataView } from "../../../sign/components/arbitrary-message/arbitrary-message-data-view";
 import { ArbitraryMsgSignHeader } from "../../../sign/components/arbitrary-message/arbitrary-message-header";
 import { ArbitraryMsgRequestOrigin } from "../../../sign/components/arbitrary-message/arbitrary-message-origin";
 import { ArbitraryMsgWalletDetails } from "../../../sign/components/arbitrary-message/arbitrary-message-wallet-details";
 import { Box } from "../../../../components/box";
-import { connectAndSignMessageWithLedger } from "../../../sign/utils/handle-bitcoin-sign";
+import {
+  connectAndSignMessageWithLedger,
+  connectAndSignMessageWithLattice1,
+} from "../../../sign/utils/handle-bitcoin-sign";
 
 export const SignBitcoinMessageView: FunctionComponent<{
   interactionData: NonNullable<
@@ -71,6 +76,10 @@ export const SignBitcoinMessageView: FunctionComponent<{
   const [ledgerInteractingError, setLedgerInteractingError] = useState<
     Error | undefined
   >(undefined);
+  const [isLattice1Interacting, setIsLattice1Interacting] = useState(false);
+  const [lattice1InteractingError, setLattice1InteractingError] = useState<
+    Error | undefined
+  >(undefined);
 
   useUnmount(() => {
     unmountPromise.resolver();
@@ -89,6 +98,13 @@ export const SignBitcoinMessageView: FunctionComponent<{
           {
             useWebHID: uiConfigStore.useWebHIDLedger,
           }
+        );
+      } else if (interactionData.data.keyType === "lattice1") {
+        setIsLattice1Interacting(true);
+        setLattice1InteractingError(undefined);
+        signature = await connectAndSignMessageWithLattice1(
+          interactionData,
+          modularChainInfo
         );
       }
 
@@ -132,14 +148,19 @@ export const SignBitcoinMessageView: FunctionComponent<{
       if (e instanceof KeplrError) {
         if (e.module === ErrModuleLedgerSign) {
           setLedgerInteractingError(e);
+        } else if (e.module === ErrModuleLattice1Sign) {
+          setLattice1InteractingError(e);
         } else {
           setLedgerInteractingError(undefined);
+          setLattice1InteractingError(undefined);
         }
       } else {
         setLedgerInteractingError(undefined);
+        setLattice1InteractingError(undefined);
       }
     } finally {
       setIsLedgerInteracting(false);
+      setIsLattice1Interacting(false);
     }
   };
 
@@ -184,7 +205,7 @@ export const SignBitcoinMessageView: FunctionComponent<{
           style: {
             width: "3.25rem",
           },
-          isLoading: isLedgerInteracting,
+          isLoading: isLedgerInteracting || isLattice1Interacting,
           onClick: async () => {
             await signBitcoinMessageInteractionStore.rejectWithProceedNext(
               interactionData.id,
@@ -252,6 +273,10 @@ export const SignBitcoinMessageView: FunctionComponent<{
           isLedgerInteracting={isLedgerInteracting}
           ledgerInteractingError={ledgerInteractingError}
           isInternal={interactionData.isInternal}
+        />
+        <Lattice1GuideBox
+          isLattice1Interacting={isLattice1Interacting}
+          lattice1InteractingError={lattice1InteractingError}
         />
       </Box>
     </HeaderLayout>

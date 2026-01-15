@@ -14,6 +14,18 @@ type ClientSignParams = Parameters<SDK.Client["sign"]>[0];
 type ClientSignData = ClientSignParams["data"];
 type LatticeSigningPayload = Extract<ClientSignData, { payload: unknown }>;
 export type LatticeEthMessagePayload = LatticeSigningPayload["payload"];
+type LatticeBitcoinSignPayload = {
+  prevOuts: {
+    txHash: string;
+    value: number;
+    index: number;
+    signerPath: number[];
+  }[];
+  recipient: string;
+  value: number;
+  fee: number;
+  changePath: number[];
+};
 
 // TODO: Add unit tests for Lattice1 signing payloads and signature normalization using mocked SDK responses.
 export interface Lattice1Keys {
@@ -219,4 +231,55 @@ export const signLattice1EthTx = async (
   }
 
   return res.sig;
+};
+
+export const signLattice1BitcoinMessage = async (
+  creds: Lattice1Credentials,
+  path: string,
+  digest: Uint8Array
+) => {
+  const client = await connectClient(creds);
+  const signerPath = bip44PathToIndices(path);
+
+  const res = await client.sign({
+    data: {
+      payload: Buffer.from(digest),
+      signerPath,
+      curveType: SDK.Constants.SIGNING.CURVES.SECP256K1,
+      hashType: SDK.Constants.SIGNING.HASHES.NONE,
+      encodingType: SDK.Constants.SIGNING.ENCODINGS.NONE,
+    },
+  });
+
+  if (!res.sig?.r || !res.sig?.s) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      "No signature returned from Lattice1"
+    );
+  }
+
+  return res.sig;
+};
+
+export const signLattice1BitcoinTx = async (
+  creds: Lattice1Credentials,
+  payload: LatticeBitcoinSignPayload
+) => {
+  const client = await connectClient(creds);
+
+  const res = await client.sign({
+    currency: "BTC",
+    data: payload,
+  });
+
+  if (!res.sigs || res.sigs.length === 0) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      "No signature returned from Lattice1"
+    );
+  }
+
+  return res.sigs;
 };

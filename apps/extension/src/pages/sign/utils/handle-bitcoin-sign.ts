@@ -12,17 +12,34 @@ import {
 import Transport from "@ledgerhq/hw-transport";
 import TransportWebHID from "@ledgerhq/hw-transport-webhid";
 import TransportWebUSB from "@ledgerhq/hw-transport-webusb";
-import { PubKeyBitcoinCompatible, toXOnly } from "@keplr-wallet/crypto";
+import {
+  Hash,
+  PubKeyBitcoinCompatible,
+  PubKeySecp256k1,
+  toXOnly,
+} from "@keplr-wallet/crypto";
 import { KeplrError } from "@keplr-wallet/router";
-import { ModularChainInfo } from "@keplr-wallet/types";
+import { BitcoinSignMessageType, ModularChainInfo } from "@keplr-wallet/types";
 import AppClient, {
   DefaultWalletPolicy,
   WalletPolicy,
   DefaultDescriptorTemplate,
 } from "ledger-bitcoin";
-import { Network, Psbt } from "bitcoinjs-lib";
-import { toOutputScript } from "bitcoinjs-lib/src/address";
-import { BIP322 } from "@keplr-wallet/background";
+import { Network, Psbt, Transaction } from "bitcoinjs-lib";
+import { fromOutputScript, toOutputScript } from "bitcoinjs-lib/src/address";
+import { BIP322, PlainObject } from "@keplr-wallet/background";
+import { secp256k1 } from "@noble/curves/secp256k1";
+import {
+  ErrLattice1SignerNotFound,
+  ErrLattice1SignFailed,
+  ErrModuleLattice1Sign,
+  Lattice1Keys,
+  getLattice1Credentials,
+  getLattice1PathFromPubKey,
+  signLattice1BitcoinMessage,
+  signLattice1BitcoinTx,
+} from "./lattice1";
+import { bip44PathToIndices } from "../../../utils/lattice1";
 
 // TODO: Support babylon staking with script path spending
 // const BABYLON_SCRIPT_TYPES = {
@@ -95,6 +112,37 @@ const DESCRIPTOR_TEMPLATES = {
    */
   BABYLON_TIMELOCK: (timelockBlocks: number) =>
     `tr(@0/**,and_v(v:pk(@1/**),older(${timelockBlocks})))`,
+};
+
+const LATTICE1_SUPPORTED_BIP44_PURPOSES = new Set([44, 49, 84]);
+const BTC_SIGHASH_ALL = 0x01;
+
+const parseBip44Path = (path: string) => {
+  const match = /^m\/(\d+)'\/(\d+)'\/(\d+)'\/(\d+)\/(\d+)$/i.exec(path);
+  if (!match) {
+    throw new Error("Invalid BIP44 path");
+  }
+  return {
+    purpose: Number(match[1]),
+    coinType: Number(match[2]),
+    account: Number(match[3]),
+    change: Number(match[4]),
+    addressIndex: Number(match[5]),
+  };
+};
+
+const normalizeScalarHex = (value: string): Buffer => {
+  const hex = value.startsWith("0x") ? value.slice(2) : value;
+  const raw = Buffer.from(hex, "hex");
+  if (raw.length > 32) {
+    throw new Error("Invalid signature length");
+  }
+  if (raw.length === 32) {
+    return raw;
+  }
+  const padded = Buffer.alloc(32);
+  raw.copy(padded, 32 - raw.length);
+  return padded;
 };
 
 export const connectAndSignMessageWithLedger = async (
@@ -254,6 +302,71 @@ export const connectAndSignMessageWithLedger = async (
   } finally {
     await transport.close();
   }
+};
+
+export const connectAndSignMessageWithLattice1 = async (
+  interactionData: NonNullable<
+    SignBitcoinMessageInteractionStore["waitingData"]
+  >,
+  modularChainInfo: ModularChainInfo
+): Promise<string> => {
+  if (!("bitcoin" in modularChainInfo)) {
+    throw new Error("Bitcoin not found");
+  }
+
+  if (interactionData.data.signType !== BitcoinSignMessageType.ECDSA) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      "Lattice1 does not support BIP-322 message signing"
+    );
+  }
+
+  const keys = interactionData.data.keyInsensitive["keys"] as Lattice1Keys;
+  const path = getLattice1PathFromPubKey(
+    keys,
+    Buffer.from(interactionData.data.pubKey).toString("hex")
+  );
+  if (path === null) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignerNotFound,
+      "Invalid signer"
+    );
+  }
+
+  const creds = getLattice1Credentials(
+    interactionData.data.keyInsensitive as PlainObject
+  );
+  const digest = Hash.hash256(encodeLegacyMessage(interactionData.data.message));
+  const sig = await signLattice1BitcoinMessage(creds, path, digest);
+  let r: Buffer;
+  let s: Buffer;
+  try {
+    r = normalizeScalarHex(sig.r);
+    s = normalizeScalarHex(sig.s);
+  } catch (e) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      e?.message || "Invalid signature returned from Lattice1"
+    );
+  }
+  const expectedPubKey = new PubKeySecp256k1(
+    interactionData.data.pubKey
+  ).toBytes(false);
+  let recovery: number;
+  try {
+    recovery = findRecoveryId(digest, r, s, expectedPubKey);
+  } catch (e) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      e?.message || "Failed to recover Bitcoin public key"
+    );
+  }
+
+  return encodeLegacySignature(r, s, recovery, true);
 };
 
 export const connectAndSignPsbtsWithLedger = async (
@@ -457,6 +570,348 @@ export const connectAndSignPsbtsWithLedger = async (
   }
 };
 
+export const connectAndSignPsbtsWithLattice1 = async (
+  interactionData: NonNullable<SignBitcoinTxInteractionStore["waitingData"]>,
+  psbtSignData: {
+    psbtHex: string;
+    inputsToSign: {
+      index: number;
+      address: string;
+      hdPath?: string;
+      tapLeafHashesToSign?: Buffer[];
+      sighashTypes?: number[];
+      disableTweakSigner?: boolean;
+      useTweakedSigner?: boolean;
+    }[];
+  }[],
+  modularChainInfo: ModularChainInfo
+): Promise<string[]> => {
+  if (!("bitcoin" in modularChainInfo)) {
+    throw new Error("Bitcoin not found");
+  }
+
+  if (psbtSignData.length === 0) {
+    throw new Error("No psbt sign data");
+  }
+
+  const keys = interactionData.data.keyInsensitive["keys"] as Lattice1Keys;
+  const basePath = getLattice1PathFromPubKey(
+    keys,
+    Buffer.from(interactionData.data.pubKey).toString("hex")
+  );
+  if (basePath === null) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignerNotFound,
+      "Invalid signer"
+    );
+  }
+
+  let basePathInfo: ReturnType<typeof parseBip44Path>;
+  try {
+    basePathInfo = parseBip44Path(basePath);
+  } catch (e) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      "Invalid Bitcoin derivation path for Lattice1"
+    );
+  }
+  if (
+    !LATTICE1_SUPPORTED_BIP44_PURPOSES.has(basePathInfo.purpose) ||
+    (basePathInfo.coinType !== 0 && basePathInfo.coinType !== 1)
+  ) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      "Unsupported Bitcoin derivation path for Lattice1"
+    );
+  }
+
+  let changePath: number[];
+  try {
+    changePath = bip44PathToIndices(basePath);
+  } catch (e) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      "Invalid Bitcoin change path"
+    );
+  }
+  if (changePath.length !== 5) {
+    throw new KeplrError(
+      ErrModuleLattice1Sign,
+      ErrLattice1SignFailed,
+      "Invalid Bitcoin change path"
+    );
+  }
+
+  const creds = getLattice1Credentials(
+    interactionData.data.keyInsensitive as PlainObject
+  );
+
+  const result: string[] = [];
+  const autoFinalized = interactionData.data.signPsbtOptions?.autoFinalized;
+  const senderAddress = interactionData.data.address;
+  const network = interactionData.data.network;
+
+  for (const data of psbtSignData) {
+    if (data.inputsToSign.length === 0) {
+      throw new KeplrError(
+        ErrModuleLattice1Sign,
+        ErrLattice1SignFailed,
+        "No inputs to sign for Lattice1"
+      );
+    }
+
+    const psbt = Psbt.fromHex(data.psbtHex);
+    if (data.inputsToSign.length !== psbt.txInputs.length) {
+      throw new KeplrError(
+        ErrModuleLattice1Sign,
+        ErrLattice1SignFailed,
+        "Lattice1 does not support partial Bitcoin signing"
+      );
+    }
+
+    const inputsToSignMap = new Map(
+      data.inputsToSign.map((input) => [input.index, input])
+    );
+
+    const orderedInputs = psbt.txInputs.map((txInput, index) => {
+      const inputToSign = inputsToSignMap.get(index);
+      if (!inputToSign) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Missing input metadata for Lattice1 signing"
+        );
+      }
+
+      if (!inputToSign.hdPath) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Missing derivation path for Lattice1 signing"
+        );
+      }
+
+      if (inputToSign.tapLeafHashesToSign?.length) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Taproot script path signing is not supported on Lattice1"
+        );
+      }
+
+      if (
+        inputToSign.sighashTypes &&
+        inputToSign.sighashTypes.some((type) => type !== BTC_SIGHASH_ALL)
+      ) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Lattice1 only supports SIGHASH_ALL"
+        );
+      }
+
+      if (inputToSign.disableTweakSigner || inputToSign.useTweakedSigner) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Taproot signing options are not supported on Lattice1"
+        );
+      }
+
+      let pathInfo: ReturnType<typeof parseBip44Path>;
+      try {
+        pathInfo = parseBip44Path(inputToSign.hdPath);
+      } catch (e) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Invalid Bitcoin derivation path for Lattice1"
+        );
+      }
+      if (
+        !LATTICE1_SUPPORTED_BIP44_PURPOSES.has(pathInfo.purpose) ||
+        (pathInfo.coinType !== 0 && pathInfo.coinType !== 1)
+      ) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Unsupported Bitcoin derivation path for Lattice1"
+        );
+      }
+      if (pathInfo.coinType !== basePathInfo.coinType) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Mismatched Bitcoin coin type for Lattice1"
+        );
+      }
+
+      let signerPath: number[];
+      try {
+        signerPath = bip44PathToIndices(inputToSign.hdPath);
+      } catch (e) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Invalid Bitcoin signer path"
+        );
+      }
+      if (signerPath.length !== 5) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Invalid Bitcoin signer path"
+        );
+      }
+
+      const input = psbt.data.inputs[index];
+      let value: number | undefined;
+      if (input.witnessUtxo) {
+        value = input.witnessUtxo.value;
+      } else if (input.nonWitnessUtxo) {
+        const tx = Transaction.fromBuffer(input.nonWitnessUtxo);
+        value = tx.outs[txInput.index]?.value;
+      }
+
+      if (value == null) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Missing UTXO value for Lattice1 signing"
+        );
+      }
+
+      const key = keys[inputToSign.hdPath];
+      const pubKey = key?.pubKey
+        ? Buffer.from(key.pubKey, "hex")
+        : inputToSign.hdPath === basePath
+        ? Buffer.from(interactionData.data.pubKey)
+        : undefined;
+      if (!pubKey) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Unsupported Bitcoin address for Lattice1"
+        );
+      }
+
+      const txHash = Buffer.from(txInput.hash).reverse().toString("hex");
+      return {
+        index,
+        signerPath,
+        txHash,
+        value,
+        pubKey,
+      };
+    });
+
+    const outputs = psbt.txOutputs.map((output) => {
+      let address: string;
+      try {
+        address =
+          output.address ?? fromOutputScript(output.script, network as Network);
+      } catch (e) {
+        throw new KeplrError(
+          ErrModuleLattice1Sign,
+          ErrLattice1SignFailed,
+          "Unsupported Bitcoin output for Lattice1"
+        );
+      }
+      return {
+        address,
+        value: output.value,
+      };
+    });
+
+    if (outputs.length === 0 || outputs.length > 2) {
+      throw new KeplrError(
+        ErrModuleLattice1Sign,
+        ErrLattice1SignFailed,
+        "Lattice1 only supports single-recipient Bitcoin transactions"
+      );
+    }
+
+    const nonSenderOutputs = outputs.filter(
+      (output) => output.address !== senderAddress
+    );
+    const recipientOutput =
+      nonSenderOutputs.length === 1
+        ? nonSenderOutputs[0]
+        : nonSenderOutputs.length === 0 && outputs.length === 1
+        ? outputs[0]
+        : undefined;
+    if (!recipientOutput) {
+      throw new KeplrError(
+        ErrModuleLattice1Sign,
+        ErrLattice1SignFailed,
+        "Lattice1 only supports single-recipient Bitcoin transactions"
+      );
+    }
+
+    const outputSum = outputs.reduce((sum, output) => sum + output.value, 0);
+    const inputSum = orderedInputs.reduce((sum, input) => sum + input.value, 0);
+    const fee = inputSum - outputSum;
+    if (fee < 0) {
+      throw new KeplrError(
+        ErrModuleLattice1Sign,
+        ErrLattice1SignFailed,
+        "Invalid Bitcoin fee for Lattice1 signing"
+      );
+    }
+
+    const prevOuts = orderedInputs.map((input) => ({
+      txHash: input.txHash,
+      value: input.value,
+      index: psbt.txInputs[input.index].index,
+      signerPath: input.signerPath,
+    }));
+
+    const sigs = await signLattice1BitcoinTx(creds, {
+      prevOuts,
+      recipient: recipientOutput.address,
+      value: recipientOutput.value,
+      fee,
+      changePath,
+    });
+
+    if (sigs.length !== orderedInputs.length) {
+      throw new KeplrError(
+        ErrModuleLattice1Sign,
+        ErrLattice1SignFailed,
+        "Unexpected signature count returned from Lattice1"
+      );
+    }
+
+    sigs.forEach((sig, sigIndex) => {
+      const input = orderedInputs[sigIndex];
+      const signature = Buffer.concat([
+        Buffer.from(sig),
+        Buffer.from([BTC_SIGHASH_ALL]),
+      ]);
+      psbt.updateInput(input.index, {
+        partialSig: [
+          {
+            pubkey: input.pubKey,
+            signature,
+          },
+        ],
+      });
+    });
+
+    if (autoFinalized !== false) {
+      psbt.finalizeAllInputs();
+    }
+
+    result.push(psbt.toHex());
+  }
+
+  return result;
+};
+
 async function checkBitcoinPubKey(
   expectedPubKey: Uint8Array,
   bip44Path: {
@@ -529,4 +984,100 @@ function getDefaultWalletPolicy(
     DESCRIPTOR_TEMPLATES.DEFAULT(purpose),
     `[${derivationPath.replace("m", masterFingerprint)}]${xpub}`
   );
+}
+
+const MAGIC_BYTES = new TextEncoder().encode("Bitcoin Signed Message:\n");
+
+function encodeLegacyMessage(message: string, prefix?: string): Uint8Array {
+  const magicBytes = prefix ? new TextEncoder().encode(prefix) : MAGIC_BYTES;
+  const magicLength = encodeVarInt(magicBytes.length);
+  const messageBytes = new TextEncoder().encode(message);
+  const messageLength = encodeVarInt(messageBytes.length);
+
+  const totalLength =
+    magicLength.length +
+    magicBytes.length +
+    messageLength.length +
+    messageBytes.length;
+
+  const buffer = Buffer.alloc(totalLength);
+
+  let offset = 0;
+  buffer.set(magicLength, offset);
+  offset += magicLength.length;
+  buffer.set(magicBytes, offset);
+  offset += magicBytes.length;
+  buffer.set(messageLength, offset);
+  offset += messageLength.length;
+  buffer.set(messageBytes, offset);
+
+  return buffer;
+}
+
+function encodeLegacySignature(
+  r: Uint8Array,
+  s: Uint8Array,
+  recovery: number,
+  compressed?: boolean
+): string {
+  if (!(recovery === 0 || recovery === 1 || recovery === 2 || recovery === 3)) {
+    throw new Error("recovery must be 0, 1, 2, or 3");
+  }
+
+  const headerByte = recovery + 27 + (compressed ? 4 : 0);
+  return Buffer.concat([
+    Uint8Array.of(headerByte),
+    Uint8Array.from(r),
+    Uint8Array.from(s),
+  ]).toString("base64");
+}
+
+function encodeVarInt(value: number): Uint8Array {
+  let buffer: Uint8Array;
+  let dataView: DataView;
+
+  if (value < 253) {
+    buffer = new Uint8Array(1);
+    buffer[0] = value;
+  } else if (value < 0x10000) {
+    buffer = new Uint8Array(3);
+    buffer[0] = 253;
+    dataView = new DataView(buffer.buffer);
+    dataView.setUint16(1, value, true);
+  } else if (value < 0x100000000) {
+    buffer = new Uint8Array(5);
+    buffer[0] = 254;
+    dataView = new DataView(buffer.buffer);
+    dataView.setUint32(1, value, true);
+  } else {
+    buffer = new Uint8Array(9);
+    buffer[0] = 255;
+    dataView = new DataView(buffer.buffer);
+    dataView.setInt32(1, value & -1, true);
+    dataView.setUint32(5, Math.floor(value / 0x100000000), true);
+  }
+  return buffer;
+}
+
+function findRecoveryId(
+  digest: Uint8Array,
+  r: Uint8Array,
+  s: Uint8Array,
+  expectedPubKey: Uint8Array
+): number {
+  const compact = Buffer.concat([Buffer.from(r), Buffer.from(s)]);
+  const signature = secp256k1.Signature.fromCompact(compact);
+  const expected = Buffer.from(expectedPubKey);
+
+  for (let recovery = 0; recovery < 4; recovery += 1) {
+    const recovered = signature
+      .addRecoveryBit(recovery)
+      .recoverPublicKey(digest)
+      .toRawBytes(true);
+    if (Buffer.from(recovered).equals(expected)) {
+      return recovery;
+    }
+  }
+
+  throw new Error("Failed to recover Bitcoin public key");
 }

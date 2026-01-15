@@ -72,8 +72,13 @@ import { BitcoinGuideBox } from "../../components/guide-box";
 import { HeaderProps } from "../../../../layouts/header/types";
 import { KeplrError } from "@keplr-wallet/router";
 import { ErrModuleLedgerSign } from "../../../sign/utils/ledger-types";
+import { ErrModuleLattice1Sign } from "../../../sign/utils/lattice1";
 import { LedgerGuideBox } from "../../../sign/components/ledger-guide-box";
-import { connectAndSignPsbtsWithLedger } from "../../../sign/utils/handle-bitcoin-sign";
+import { Lattice1GuideBox } from "../../../sign/components/lattice1-guide-box";
+import {
+  connectAndSignPsbtsWithLedger,
+  connectAndSignPsbtsWithLattice1,
+} from "../../../sign/utils/handle-bitcoin-sign";
 
 export const SignBitcoinTxView: FunctionComponent<{
   interactionData: NonNullable<SignBitcoinTxInteractionStore["waitingData"]>;
@@ -321,6 +326,10 @@ export const SignBitcoinTxView: FunctionComponent<{
   const [ledgerInteractingError, setLedgerInteractingError] = useState<
     Error | undefined
   >(undefined);
+  const [isLattice1Interacting, setIsLattice1Interacting] = useState(false);
+  const [lattice1InteractingError, setLattice1InteractingError] = useState<
+    Error | undefined
+  >(undefined);
 
   const isTestnet = modularChainInfo.bitcoin.bip44.coinType === 1;
 
@@ -346,7 +355,9 @@ export const SignBitcoinTxView: FunctionComponent<{
   const isLoading =
     signBitcoinTxInteractionStore.isObsoleteInteractionApproved(
       interactionData.id
-    ) || isLedgerInteracting;
+    ) ||
+    isLedgerInteracting ||
+    isLattice1Interacting;
   const isExternal =
     interactionInfo.interaction && !interactionInfo.interactionInternal;
 
@@ -402,6 +413,14 @@ export const SignBitcoinTxView: FunctionComponent<{
           modularChainInfo,
           { useWebHID: uiConfigStore.useWebHIDLedger }
         );
+      } else if (interactionData.data.keyType === "lattice1") {
+        setIsLattice1Interacting(true);
+        setLattice1InteractingError(undefined);
+        signedPsbtsHexes = await connectAndSignPsbtsWithLattice1(
+          interactionData,
+          psbtSignData,
+          modularChainInfo
+        );
       }
 
       await signBitcoinTxInteractionStore.approveWithProceedNext(
@@ -444,14 +463,19 @@ export const SignBitcoinTxView: FunctionComponent<{
       if (e instanceof KeplrError) {
         if (e.module === ErrModuleLedgerSign) {
           setLedgerInteractingError(e);
+        } else if (e.module === ErrModuleLattice1Sign) {
+          setLattice1InteractingError(e);
         } else {
           setLedgerInteractingError(undefined);
+          setLattice1InteractingError(undefined);
         }
       } else {
         setLedgerInteractingError(undefined);
+        setLattice1InteractingError(undefined);
       }
     } finally {
       setIsLedgerInteracting(false);
+      setIsLattice1Interacting(false);
     }
   };
 
@@ -605,6 +629,13 @@ export const SignBitcoinTxView: FunctionComponent<{
         isInternal={interactionData.isInternal}
       />
     ) : undefined;
+  const lattice1GuideBox =
+    interactionData.data.keyType === "lattice1" ? (
+      <Lattice1GuideBox
+        isLattice1Interacting={isLattice1Interacting}
+        lattice1InteractingError={lattice1InteractingError}
+      />
+    ) : undefined;
 
   return (
     <HeaderLayout
@@ -639,6 +670,7 @@ export const SignBitcoinTxView: FunctionComponent<{
             totalPsbts={validatedPsbts.length}
             currentPsbtIndex={currentPsbtIndex}
             ledgerGuideBox={ledgerGuideBox}
+            lattice1GuideBox={lattice1GuideBox}
             criticalValidationError={criticalValidationError}
           />
         ) : (
@@ -650,6 +682,7 @@ export const SignBitcoinTxView: FunctionComponent<{
             origin={interactionData.data.origin}
             validatedPsbt={validatedPsbts?.[0]}
             ledgerGuideBox={ledgerGuideBox}
+            lattice1GuideBox={lattice1GuideBox}
             criticalValidationError={criticalValidationError}
           />
         )
@@ -662,6 +695,7 @@ export const SignBitcoinTxView: FunctionComponent<{
             <FeeSummary feeConfig={feeConfig} isInitialized={isInitialized} />
           }
           ledgerGuideBox={ledgerGuideBox}
+          lattice1GuideBox={lattice1GuideBox}
         />
       )}
     </HeaderLayout>
@@ -674,6 +708,7 @@ const InternalSendBitcoinTxReview: FunctionComponent<{
   chainId: string;
   feeSummary: React.ReactNode;
   ledgerGuideBox?: React.ReactNode;
+  lattice1GuideBox?: React.ReactNode;
 }> = observer(
   ({
     validatedPsbt,
@@ -681,6 +716,7 @@ const InternalSendBitcoinTxReview: FunctionComponent<{
     feeSummary,
     isUnableToGetUTXOs,
     ledgerGuideBox,
+    lattice1GuideBox,
   }) => {
     const theme = useTheme();
     const { chainStore } = useStore();
@@ -920,6 +956,7 @@ const InternalSendBitcoinTxReview: FunctionComponent<{
         <div style={{ marginTop: "0.75rem", flex: 1 }} />
         {feeSummary}
         {ledgerGuideBox}
+        {lattice1GuideBox}
       </Box>
     );
   }
@@ -938,6 +975,7 @@ const PsbtDetailsView: FunctionComponent<{
   totalPsbts?: number;
   currentPsbtIndex?: number;
   ledgerGuideBox?: React.ReactNode;
+  lattice1GuideBox?: React.ReactNode;
   criticalValidationError?: Error;
 }> = observer(
   ({
@@ -950,6 +988,7 @@ const PsbtDetailsView: FunctionComponent<{
     totalPsbts,
     currentPsbtIndex,
     ledgerGuideBox,
+    lattice1GuideBox,
     criticalValidationError,
   }) => {
     const theme = useTheme();
@@ -1024,6 +1063,10 @@ const PsbtDetailsView: FunctionComponent<{
       totalPsbts && currentPsbtIndex !== undefined
         ? currentPsbtIndex === totalPsbts - 1 && ledgerGuideBox
         : ledgerGuideBox;
+    const hasLattice1GuideBox =
+      totalPsbts && currentPsbtIndex !== undefined
+        ? currentPsbtIndex === totalPsbts - 1 && lattice1GuideBox
+        : lattice1GuideBox;
 
     const isSidePanel = isRunningInSidePanel();
 
@@ -1047,7 +1090,10 @@ const PsbtDetailsView: FunctionComponent<{
           criticalValidationError={criticalValidationError}
         />
         {ledgerGuideBox}
-        {(hasGuideBox || hasLedgerGuideBox) && <Gutter size="0.75rem" />}
+        {lattice1GuideBox}
+        {(hasGuideBox || hasLedgerGuideBox || hasLattice1GuideBox) && (
+          <Gutter size="0.75rem" />
+        )}
         {totalPsbts && totalPsbts > 1 && currentPsbtIndex !== undefined && (
           <React.Fragment>
             <Box padding="0.25rem" alignX="center">

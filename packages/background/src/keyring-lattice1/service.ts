@@ -1,8 +1,10 @@
 import { PlainObject, Vault } from "../vault";
 import { Buffer } from "buffer/";
-import { PubKeySecp256k1 } from "@keplr-wallet/crypto";
+import { PubKeyBitcoinCompatible, PubKeySecp256k1 } from "@keplr-wallet/crypto";
 import { KeyRingService } from "../keyring";
 import { Lattice1Accounts } from "./types";
+import { ModularChainInfo } from "@keplr-wallet/types";
+import { Network as BitcoinNetwork } from "bitcoinjs-lib";
 
 export class KeyRingLattice1Service {
   async init(): Promise<void> {
@@ -70,6 +72,42 @@ export class KeyRingLattice1Service {
       throw new Error(`Lattice1 is not initialized.`);
     }
     return new PubKeySecp256k1(bytes);
+  }
+
+  getPubKeyBitcoin(
+    vault: Vault,
+    purpose: number,
+    coinType: number,
+    network: BitcoinNetwork,
+    modularChainInfo: ModularChainInfo
+  ): PubKeyBitcoinCompatible {
+    if (!("bitcoin" in modularChainInfo)) {
+      throw new Error("'modularChainInfo' should have Bitcoin chain info");
+    }
+
+    let bytes: Buffer;
+    let path: string | undefined;
+    if (vault.insensitive["keys"]) {
+      path = Object.keys(vault.insensitive["keys"]).find((path) => {
+        const result = KeyRingService.parseBIP44Path(path);
+        return result.purpose === purpose && result.coinType === coinType;
+      });
+      if (!path) {
+        throw new Error(
+          `Purpose ${purpose} and CoinType ${coinType} is not supported.`
+        );
+      }
+      bytes = Buffer.from(
+        ((vault.insensitive["keys"] as PlainObject)[path] as PlainObject)[
+          "pubKey"
+        ] as string,
+        "hex"
+      );
+    } else {
+      throw new Error(`Lattice1 is not initialized.`);
+    }
+
+    return new PubKeyBitcoinCompatible(bytes, network, undefined, path);
   }
 
   sign(): {
