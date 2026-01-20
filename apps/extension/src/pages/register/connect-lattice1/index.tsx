@@ -109,6 +109,22 @@ export const ConnectLattice1Scene: FunctionComponent<{
   const [step, setStep] = useState<Step>("unknown");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [showPermissionHelp, setShowPermissionHelp] = useState(false);
+
+  const getConnectErrorInfo = (err: unknown) => {
+    const message = err instanceof Error ? err.message : "";
+    const isPermissionError = /no active wallet|wrong wallet|permission/i.test(
+      message.toLowerCase()
+    );
+    return {
+      message: isPermissionError
+        ? intl.formatMessage({
+            id: "pages.register.connect-lattice1.error-permission",
+          })
+        : message || "Failed to connect to Lattice1.",
+      showPermissionHelp: isPermissionError,
+    };
+  };
 
   const paths = useMemo(() => {
     const basePaths = isDefaultPath(bip44Path)
@@ -129,6 +145,7 @@ export const ConnectLattice1Scene: FunctionComponent<{
   const connectLattice1 = async () => {
     setIsLoading(true);
     setError(undefined);
+    setShowPermissionHelp(false);
 
     try {
       const creds = await requestLattice1Credentials();
@@ -176,7 +193,9 @@ export const ConnectLattice1Scene: FunctionComponent<{
     } catch (e) {
       console.log(e);
       setStep("unknown");
-      setError(e?.message || "Failed to connect to Lattice1.");
+      const errorInfo = getConnectErrorInfo(e);
+      setError(errorInfo.message);
+      setShowPermissionHelp(errorInfo.showPermissionHelp);
     } finally {
       setIsLoading(false);
     }
@@ -221,6 +240,26 @@ export const ConnectLattice1Scene: FunctionComponent<{
               id: "pages.register.connect-lattice1.error-title",
             })}
             paragraph={error}
+            bottom={
+              showPermissionHelp ? (
+                <a
+                  href="https://docs.gridplus.io/apps-and-integrations/lattice-manager/lattice-manager-troubleshooting#id-4.-remove-the-lattice-manager-permission-and-try-re-connecting"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    color:
+                      theme.mode === "light"
+                        ? ColorPalette["blue-400"]
+                        : ColorPalette["blue-300"],
+                    textUnderlineOffset: "3px",
+                  }}
+                >
+                  {intl.formatMessage({
+                    id: "pages.register.connect-lattice1.error-permission-link",
+                  })}
+                </a>
+              ) : undefined
+            }
           />
         </React.Fragment>
       ) : null}
