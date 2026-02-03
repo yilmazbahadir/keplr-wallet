@@ -6329,7 +6329,7 @@ __metadata:
     deepmerge: ^4.2.2
     delay: ^4.4.0
     fork-ts-checker-webpack-plugin: ^7.2.13
-    gridplus-sdk: ^4.0.0
+    gridplus-sdk: "patch:gridplus-sdk@npm:4.0.0#../../.yarn/patches/gridplus-sdk-npm-4.0.0-0e9f598de2.patch"
     html-webpack-plugin: ^5.5.0
     https-browserify: ^1.0.0
     identity-obj-proxy: ^3.0.0
@@ -20139,7 +20139,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gridplus-sdk@npm:^4.0.0":
+"gridplus-sdk@npm:4.0.0":
   version: 4.0.0
   resolution: "gridplus-sdk@npm:4.0.0"
   dependencies:
@@ -20167,6 +20167,37 @@ __metadata:
     viem: ^2.37.8
     zod: ^4.1.11
   checksum: 3626a5d0b01dd45e85cdd1d4385c730ebfd787fcb1ef2c762f4737ee6ec35a7cf943b4e2a9ac510ae176b469c49509fa2c6314f25cfaf97c7410d68372949671
+  languageName: node
+  linkType: hard
+
+"gridplus-sdk@patch:gridplus-sdk@npm:4.0.0#../../.yarn/patches/gridplus-sdk-npm-4.0.0-0e9f598de2.patch::locator=%40keplr-wallet%2Fextension%40workspace%3Aapps%2Fextension":
+  version: 4.0.0
+  resolution: "gridplus-sdk@patch:gridplus-sdk@npm%3A4.0.0#../../.yarn/patches/gridplus-sdk-npm-4.0.0-0e9f598de2.patch::version=4.0.0&hash=da9463&locator=%40keplr-wallet%2Fextension%40workspace%3Aapps%2Fextension"
+  dependencies:
+    "@ethereumjs/common": ^10.0.0
+    "@ethereumjs/rlp": ^10.0.0
+    "@ethereumjs/tx": ^10.0.0
+    "@metamask/eth-sig-util": ^8.2.0
+    "@types/uuid": ^11.0.0
+    aes-js: ^3.1.2
+    bech32: ^2.0.0
+    bignumber.js: ^9.3.1
+    bitwise: ^2.2.1
+    bn.js: ^5.2.2
+    bs58check: ^4.0.0
+    buffer: ^6.0.3
+    cbor: ^10.0.11
+    cbor-bigdecimal: ^10.0.11
+    crc-32: ^1.2.2
+    elliptic: 6.6.1
+    hash.js: ^1.1.7
+    lodash: ^4.17.21
+    ox: ^0.9.7
+    secp256k1: 5.0.1
+    uuid: ^13.0.0
+    viem: ^2.37.8
+    zod: ^4.1.11
+  checksum: f0776f24b31414d2ac25c379d73555e7f3d73539e710847e3e6d586caac5d2b0cbab3b4e90d07b6d53550927f3478369366e15926142954e0dfc01713dc8af03
   languageName: node
   linkType: hard
 

@@ -1,0 +1,92 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index a78eb62001f784924eabc712b1e4234b5ee53c23..7086870ebf44cd239d86e02c23d9f52e9bc9a2f9 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -601,6 +601,7 @@ var EXTERNAL = {
+     ENCODINGS: {
+       NONE: 1 /* none */,
+       SOLANA: 2 /* solana */,
++      COSMOS: 3 /* cosmos */,
+       EVM: 4 /* evm */,
+       ETH_DEPOSIT: 5 /* eth_deposit */,
+       EIP7702_AUTH: 6 /* eip7702_auth */,
+@@ -867,7 +868,8 @@ function getFwVersionConst(v) {
+     c.genericSigning.curveTypes = EXTERNAL.SIGNING.CURVES;
+     c.genericSigning.encodingTypes = {
+       NONE: EXTERNAL.SIGNING.ENCODINGS.NONE,
+-      SOLANA: EXTERNAL.SIGNING.ENCODINGS.SOLANA
++      SOLANA: EXTERNAL.SIGNING.ENCODINGS.SOLANA,
++      COSMOS: EXTERNAL.SIGNING.ENCODINGS.COSMOS
+     };
+     c.getAddressFlags = [
+       EXTERNAL.GET_ADDR_FLAGS.ED25519_PUB,
+diff --git a/dist/index.d.cts b/dist/index.d.cts
+index cb84cb787b10ac0cc86ee3fc2af42f68e79d9ad2..ace42ec7a680da40732e24fab73650b6c89f66f7 100644
+--- a/dist/index.d.cts
++++ b/dist/index.d.cts
+@@ -81,6 +81,7 @@ declare const EXTERNAL$1: {
+         readonly ENCODINGS: {
+             readonly NONE: LatticeSignEncoding.none;
+             readonly SOLANA: LatticeSignEncoding.solana;
++            readonly COSMOS: LatticeSignEncoding.cosmos;
+             readonly EVM: LatticeSignEncoding.evm;
+             readonly ETH_DEPOSIT: LatticeSignEncoding.eth_deposit;
+             readonly EIP7702_AUTH: LatticeSignEncoding.eip7702_auth;
+@@ -205,6 +206,7 @@ interface GenericSigningData {
+     encodingTypes: {
+         NONE: typeof EXTERNAL$1.SIGNING.ENCODINGS.NONE;
+         SOLANA: typeof EXTERNAL$1.SIGNING.ENCODINGS.SOLANA;
++        COSMOS?: typeof EXTERNAL$1.SIGNING.ENCODINGS.COSMOS;
+         EVM?: typeof EXTERNAL$1.SIGNING.ENCODINGS.EVM;
+     };
+ }
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index cb84cb787b10ac0cc86ee3fc2af42f68e79d9ad2..7870e7670246edb0a16c03f6804e3e2f2964bc3e 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -43,6 +43,7 @@ declare enum LatticeSignCurve {
+ declare enum LatticeSignEncoding {
+     none = 1,
+     solana = 2,
++    cosmos = 3,
+     evm = 4,
+     eth_deposit = 5,
+     eip7702_auth = 6,
+@@ -81,6 +82,7 @@ declare const EXTERNAL$1: {
+         readonly ENCODINGS: {
+             readonly NONE: LatticeSignEncoding.none;
+             readonly SOLANA: LatticeSignEncoding.solana;
++            readonly COSMOS: LatticeSignEncoding.cosmos;
+             readonly EVM: LatticeSignEncoding.evm;
+             readonly ETH_DEPOSIT: LatticeSignEncoding.eth_deposit;
+             readonly EIP7702_AUTH: LatticeSignEncoding.eip7702_auth;
+@@ -205,6 +207,7 @@ interface GenericSigningData {
+     encodingTypes: {
+         NONE: typeof EXTERNAL$1.SIGNING.ENCODINGS.NONE;
+         SOLANA: typeof EXTERNAL$1.SIGNING.ENCODINGS.SOLANA;
++        COSMOS?: typeof EXTERNAL$1.SIGNING.ENCODINGS.COSMOS;
+         EVM?: typeof EXTERNAL$1.SIGNING.ENCODINGS.EVM;
+     };
+ }
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 793949dd1f22aec3542aa667b267b02c7c670cb8..ad69e977479e14afa2d138a7fe7c835fe2df64e1 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -527,6 +527,7 @@ var EXTERNAL = {
+     ENCODINGS: {
+       NONE: 1 /* none */,
+       SOLANA: 2 /* solana */,
++      COSMOS: 3 /* cosmos */,
+       EVM: 4 /* evm */,
+       ETH_DEPOSIT: 5 /* eth_deposit */,
+       EIP7702_AUTH: 6 /* eip7702_auth */,
+@@ -793,7 +794,8 @@ function getFwVersionConst(v) {
+     c.genericSigning.curveTypes = EXTERNAL.SIGNING.CURVES;
+     c.genericSigning.encodingTypes = {
+       NONE: EXTERNAL.SIGNING.ENCODINGS.NONE,
+-      SOLANA: EXTERNAL.SIGNING.ENCODINGS.SOLANA
++      SOLANA: EXTERNAL.SIGNING.ENCODINGS.SOLANA,
++      COSMOS: EXTERNAL.SIGNING.ENCODINGS.COSMOS
+     };
+     c.getAddressFlags = [
+       EXTERNAL.GET_ADDR_FLAGS.ED25519_PUB,

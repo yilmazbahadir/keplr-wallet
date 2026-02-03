@@ -71,7 +71,7 @@
     "color": "^4.2.3",
     "crypto-browserify": "^3.12.0",
     "delay": "^4.4.0",
-    "gridplus-sdk": "^4.0.0",
+    "gridplus-sdk": "patch:gridplus-sdk@npm:4.0.0#../../.yarn/patches/gridplus-sdk-npm-4.0.0-0e9f598de2.patch",
     "https-browserify": "^1.0.0",
     "joi": "^17.5.0",
     "js-yaml": "^4.1.0",
