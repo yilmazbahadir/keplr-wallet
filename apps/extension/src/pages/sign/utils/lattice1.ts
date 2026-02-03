@@ -158,7 +158,7 @@ export const signLattice1Cosmos = async (
       signerPath,
       curveType: SDK.Constants.SIGNING.CURVES.SECP256K1,
       hashType: SDK.Constants.SIGNING.HASHES.SHA256,
-      encodingType: SDK.Constants.SIGNING.ENCODINGS.NONE,
+      encodingType: SDK.Constants.SIGNING.ENCODINGS.COSMOS,
     },
   });
 

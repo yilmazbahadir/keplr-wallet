@@ -241,7 +241,7 @@ export class Price24HChangesStore extends ObservableQuery<ResPrice24hChanges> {
   }
 
   protected override canFetch(): boolean {
-    return this._coinIds.values.length > 0;
+    return this.hasValidBaseURL() && this._coinIds.values.length > 0;
   }
 
   protected updateURL(coinIds: string[], forceSetUrl: boolean = false) {
@@ -259,9 +259,30 @@ export class Price24HChangesStore extends ObservableQuery<ResPrice24hChanges> {
   }
 
   protected override getCacheKey(): string {
+    if (!this.hasValidBaseURL()) {
+      return this._optionUri;
+    }
     // Because the uri of the coingecko would be changed according to the coin ids and vsCurrencies.
     // Therefore, just using the uri as the cache key is not useful.
-    return makeURL(this.baseURL, this._optionUri);
+    try {
+      return makeURL(this.baseURL, this._optionUri);
+    } catch (e) {
+      console.log("Failed to make URL", this.baseURL, this._optionUri, e);
+      return this._optionUri;
+    }
+  }
+
+  protected override hasValidBaseURL(): boolean {
+    const trimmed = this.baseURL.trim();
+    if (!trimmed) {
+      return false;
+    }
+    try {
+      const url = new URL(trimmed);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
   }
 
   get24HChange = computedFn((coinId: string): RatePretty | undefined => {

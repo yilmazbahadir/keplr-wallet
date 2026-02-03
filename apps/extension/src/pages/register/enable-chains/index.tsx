@@ -692,9 +692,16 @@ export const EnableChainsScene: FunctionComponent<{
 
           const linkedChainInfos = modularChainInfo.linkedModularChainInfos ?? [];
           const bitcoinInfos = [modularChainInfo, ...linkedChainInfos].filter(
-            (chainInfo) =>
-              "bitcoin" in chainInfo &&
-              supportedBitcoinPurposes.has(chainInfo.bitcoin.bip44.purpose)
+            (chainInfo) => {
+              if (!("bitcoin" in chainInfo)) {
+                return false;
+              }
+              const purpose = chainInfo.bitcoin.bip44.purpose;
+              return (
+                typeof purpose === "number" &&
+                supportedBitcoinPurposes.has(purpose)
+              );
+            }
           );
 
           if (bitcoinInfos.length === 0) {
@@ -703,11 +710,16 @@ export const EnableChainsScene: FunctionComponent<{
 
           const preferredBitcoinInfo =
             bitcoinInfos.find(
-              (chainInfo) =>
-                "bitcoin" in chainInfo &&
-                preferredBitcoinPurposeOrder.includes(
-                  chainInfo.bitcoin.bip44.purpose
-                )
+              (chainInfo) => {
+                if (!("bitcoin" in chainInfo)) {
+                  return false;
+                }
+                const purpose = chainInfo.bitcoin.bip44.purpose;
+                return (
+                  typeof purpose === "number" &&
+                  preferredBitcoinPurposeOrder.includes(purpose)
+                );
+              }
             ) ?? bitcoinInfos[0];
 
           const supportedLinkedChainInfos = bitcoinInfos.filter(

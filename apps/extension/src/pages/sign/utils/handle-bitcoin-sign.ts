@@ -39,6 +39,7 @@ import {
   signLattice1BitcoinMessage,
   signLattice1BitcoinTx,
 } from "./lattice1";
+import { normalizeScalarHex } from "../../../utils";
 import { bip44PathToIndices } from "../../../utils/lattice1";
 
 // TODO: Support babylon staking with script path spending
@@ -129,20 +130,6 @@ const parseBip44Path = (path: string) => {
     change: Number(match[4]),
     addressIndex: Number(match[5]),
   };
-};
-
-const normalizeScalarHex = (value: string): Buffer => {
-  const hex = value.startsWith("0x") ? value.slice(2) : value;
-  const raw = Buffer.from(hex, "hex");
-  if (raw.length > 32) {
-    throw new Error("Invalid signature length");
-  }
-  if (raw.length === 32) {
-    return raw;
-  }
-  const padded = Buffer.alloc(32);
-  raw.copy(padded, 32 - raw.length);
-  return padded;
 };
 
 export const connectAndSignMessageWithLedger = async (

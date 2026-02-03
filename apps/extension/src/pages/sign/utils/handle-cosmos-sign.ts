@@ -43,6 +43,7 @@ import Base from "@keystonehq/hw-app-base";
 import { PlainObject } from "@keplr-wallet/background";
 import { KeplrError } from "@keplr-wallet/router";
 import { LedgerOptions } from "./ledger-types";
+import { normalizeSignatureHex } from "../../../utils";
 
 export interface KeystoneOptions {
   isEthSigning: boolean;
@@ -291,8 +292,8 @@ export const handleCosmosPreSign = async (
       );
       const sig = await signLattice1Cosmos(creds, path, signBytes);
 
-      const r = Buffer.from(sig.r.replace(/^0x/, ""), "hex");
-      const s = Buffer.from(sig.s.replace(/^0x/, ""), "hex");
+      const r = Buffer.from(normalizeSignatureHex(sig.r), "hex");
+      const s = Buffer.from(normalizeSignatureHex(sig.s), "hex");
       return Buffer.concat([r, s]);
     }
     default:

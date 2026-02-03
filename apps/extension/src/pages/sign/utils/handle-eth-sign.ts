@@ -16,7 +16,6 @@ import {
   LedgerOptions,
 } from "./ledger-types";
 import Eth from "@ledgerhq/hw-app-eth";
-import { LedgerUtils } from "../../../utils";
 import { PubKeySecp256k1 } from "@keplr-wallet/crypto";
 import {
   domainHash,
@@ -50,6 +49,11 @@ import {
   createKeystoneTransport,
   handleKeystoneUSBError,
 } from "../../../utils/keystone";
+import {
+  LedgerUtils,
+  normalizeSignatureHex,
+  normalizeSignatureV,
+} from "../../../utils";
 import { PlainObject } from "@keplr-wallet/background";
 export interface KeystoneOptions {
   displayQRCode: (ur: { type: string; cbor: string }) => Promise<void>;
@@ -213,9 +217,9 @@ export const handleEthereumPreSignByLattice1 = async (
         "signPersonal"
       );
       return ethSignatureToBytes({
-        r: sig.r.replace(/^0x/, ""),
-        s: sig.s.replace(/^0x/, ""),
-        v: typeof sig.v === "bigint" ? Number(sig.v) : sig.v ?? 0,
+        r: normalizeSignatureHex(sig.r),
+        s: normalizeSignatureHex(sig.s),
+        v: normalizeSignatureV(sig.v),
       });
     }
     case EthSignType.EIP712: {
@@ -229,18 +233,18 @@ export const handleEthereumPreSignByLattice1 = async (
         "eip712"
       );
       return ethSignatureToBytes({
-        r: sig.r.replace(/^0x/, ""),
-        s: sig.s.replace(/^0x/, ""),
-        v: typeof sig.v === "bigint" ? Number(sig.v) : sig.v ?? 0,
+        r: normalizeSignatureHex(sig.r),
+        s: normalizeSignatureHex(sig.s),
+        v: normalizeSignatureV(sig.v),
       });
     }
     case EthSignType.TRANSACTION: {
       const payload = encodeEthMessage(signingMessage, EthSignType.TRANSACTION);
       const sig = await signLattice1EthTx(creds, path, payload);
       return ethSignatureToBytes({
-        r: sig.r.replace(/^0x/, ""),
-        s: sig.s.replace(/^0x/, ""),
-        v: typeof sig.v === "bigint" ? Number(sig.v) : sig.v ?? 0,
+        r: normalizeSignatureHex(sig.r),
+        s: normalizeSignatureHex(sig.s),
+        v: normalizeSignatureV(sig.v),
       });
     }
   }
