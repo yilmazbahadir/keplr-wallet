@@ -32,6 +32,7 @@ import * as RecentSendHistory from "./recent-send-history/internal";
 import * as SidePanel from "./side-panel/internal";
 import * as Settings from "./settings/internal";
 import * as ManageViewAssetToken from "./manage-view-asset-token/internal";
+import * as BackgroundTxExecutor from "./tx-executor/internal";
 
 export * from "./chains";
 export * from "./chains-ui";
@@ -60,6 +61,7 @@ export * from "./side-panel";
 export * from "./settings";
 export * from "./manage-view-asset-token";
 export * from "./tx-ethereum";
+export * from "./tx-executor";
 
 import { KVStore } from "@keplr-wallet/common";
 import { ChainInfo, ModularChainInfo } from "@keplr-wallet/types";
@@ -220,6 +222,7 @@ export function init(
     interactionService,
     chainsUIService,
     analyticsService,
+    backgroundTxService,
     msgPrivilegedOrigins,
     msgPrivilegedCosmwasmContractMap
   );
@@ -294,12 +297,17 @@ export function init(
     keyRingBitcoinService
   );
 
+  const txExecutableMQ =
+    BackgroundTxExecutor.createSingleChannelEventBus<BackgroundTxExecutor.TxExecutionEvent>();
+
   const recentSendHistoryService =
     new RecentSendHistory.RecentSendHistoryService(
       storeCreator("recent-send-history"),
       chainsService,
       backgroundTxService,
-      notification
+      analyticsService,
+      notification,
+      txExecutableMQ.publisher
     );
 
   const settingsService = new Settings.SettingsService(
@@ -313,6 +321,19 @@ export function init(
       vaultService,
       chainsUIService,
       chainsService
+    );
+
+  const backgroundTxExecutorService =
+    new BackgroundTxExecutor.BackgroundTxExecutorService(
+      storeCreator("background-tx-executor"),
+      chainsService,
+      keyRingCosmosService,
+      keyRingEthereumService,
+      backgroundTxService,
+      backgroundTxEthereumService,
+      analyticsService,
+      recentSendHistoryService,
+      txExecutableMQ.subscriber
     );
 
   Interaction.init(router, interactionService);
@@ -370,6 +391,7 @@ export function init(
   SidePanel.init(router, sidePanelService);
   Settings.init(router, settingsService);
   ManageViewAssetToken.init(router, manageViewAssetTokenService);
+  BackgroundTxExecutor.init(router, backgroundTxExecutorService);
 
   return {
     initFn: async () => {
@@ -409,6 +431,8 @@ export function init(
       await chainsService.afterInit();
 
       await manageViewAssetTokenService.init();
+
+      await backgroundTxExecutorService.init();
     },
     keyRingService: keyRingV2Service,
     analyticsService: analyticsService,

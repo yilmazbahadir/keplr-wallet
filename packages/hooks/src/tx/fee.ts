@@ -363,13 +363,18 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
         },
       ];
     } else {
+      const l1DataFeeToAdd = this.chainInfo.features?.includes(
+        "op-stack-l1-data-fee"
+      )
+        ? this.l1DataFee ?? new Dec(0)
+        : new Dec(0);
       res = this.fee.map((fee) => {
         return {
           amount: fee
             .add(
-              this.l1DataFee?.quo(
+              l1DataFeeToAdd.quo(
                 DecUtils.getTenExponentN(fee.currency.coinDecimals)
-              ) ?? new Dec(0)
+              )
             )
             .toCoin().amount,
           currency: fee.currency,
@@ -592,9 +597,12 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
     (feeCurrency: FeeCurrency, feeType: FeeType) => {
       const gas = this.gasConfig.gas;
       const gasPrice = this.getGasPriceForFeeCurrency(feeCurrency, feeType);
-      const feeAmount = gasPrice
-        .mul(new Dec(gas))
-        .add(this.l1DataFee ?? new Dec(0));
+      const l1DataFeeToAdd = this.chainInfo.features?.includes(
+        "op-stack-l1-data-fee"
+      )
+        ? this.l1DataFee ?? new Dec(0)
+        : new Dec(0);
+      const feeAmount = gasPrice.mul(new Dec(gas)).add(l1DataFeeToAdd);
 
       return new CoinPretty(feeCurrency, feeAmount.roundUp()).maxDecimals(
         feeCurrency.coinDecimals
@@ -622,7 +630,7 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
               average?: number;
               high?: number;
             }>(
-              "https://gjsttg7mkgtqhjpt3mv5aeuszi0zblbb.lambda-url.us-west-2.on.aws/osmosis/osmosis-base-fee-beta.json"
+              "https://config-lambda.keplr.app/osmosis/osmosis-base-fee-beta.json"
             );
 
             const baseFee = queryOsmosis.queryBaseFee.baseFee;
@@ -1217,7 +1225,7 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
 
       if (!bal) {
         priorWarning = new Error(
-          `Can't parse the balance for ${need.currency.coinMinimalDenom}`
+          `Unable to load your ${need.currency.coinMinimalDenom} balance`
         );
       }
 
@@ -1416,10 +1424,7 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
             high: number;
           }
         | undefined;
-    }>(
-      "https://gjsttg7mkgtqhjpt3mv5aeuszi0zblbb.lambda-url.us-west-2.on.aws",
-      "/feemarket/info.json"
-    );
+    }>("https://config-lambda.keplr.app", "/feemarket/info.json");
 
     if (multificationConfig.response) {
       const _default = multificationConfig.response.data["__default__"];
