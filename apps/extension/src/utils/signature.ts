@@ -29,7 +29,7 @@ export const normalizeSignatureV = (
   return hex ? Number.parseInt(hex, 16) : 0;
 };
 
-export const normalizeScalarHex = (value: string | Uint8Array): Buffer => {
+export const normalizeScalarHex = (value: string | Uint8Array): Uint8Array => {
   const hex = normalizeSignatureHex(value);
   const raw = Buffer.from(hex, "hex");
   if (raw.length > 32) {

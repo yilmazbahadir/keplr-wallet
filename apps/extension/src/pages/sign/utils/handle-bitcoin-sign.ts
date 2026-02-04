@@ -327,8 +327,8 @@ export const connectAndSignMessageWithLattice1 = async (
   );
   const digest = Hash.hash256(encodeLegacyMessage(interactionData.data.message));
   const sig = await signLattice1BitcoinMessage(creds, path, digest);
-  let r: Buffer;
-  let s: Buffer;
+  let r: Uint8Array;
+  let s: Uint8Array;
   try {
     r = normalizeScalarHex(sig.r);
     s = normalizeScalarHex(sig.s);

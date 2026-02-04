@@ -272,7 +272,7 @@ export class Price24HChangesStore extends ObservableQuery<ResPrice24hChanges> {
     }
   }
 
-  protected override hasValidBaseURL(): boolean {
+  protected hasValidBaseURL(): boolean {
     const trimmed = this.baseURL.trim();
     if (!trimmed) {
       return false;
